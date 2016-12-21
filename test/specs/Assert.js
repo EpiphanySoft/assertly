@@ -2,9 +2,72 @@
 
 /* global describe, it */
 
-import Assert from '../../Assert';
+const Assert = require('../../Assert');
 
-function allTests (A) {
+describe('isArrayLike', function () {
+    const A = Assert;
+    const expect = A.expect;
+
+    describe('arrayish', function () {
+        it('should report true for an array', function () {
+            expect(A.isArrayLike([])).to.be(true);
+        });
+
+        it('should report true for an arguments', function () {
+            function foo () {
+                expect(A.isArrayLike(arguments)).to.be(true);
+            }
+            foo();
+        });
+
+        it('should report true for string objects', function () {
+            expect(A.isArrayLike(new String('hello'))).to.be(true);
+        });
+    });
+
+    describe('not arrays', function () {
+        it('should report false for booleans', function () {
+            expect(A.isArrayLike(true)).to.be(false);
+        });
+
+        it('should report false for boolean objects', function () {
+            expect(A.isArrayLike(new Boolean(true))).to.be(false);
+        });
+
+        it('should report false for dates', function () {
+            expect(A.isArrayLike(new Date())).to.be(false);
+        });
+
+        it('should report false for numbers', function () {
+            expect(A.isArrayLike(42)).to.be(false);
+        });
+
+        it('should report false for number objects', function () {
+            expect(A.isArrayLike(new Number(42))).to.be(false);
+        });
+
+        it('should report false for regex', function () {
+            expect(A.isArrayLike(/foo/)).to.be(false);
+        });
+
+        it('should report false for strings', function () {
+            expect(A.isArrayLike('hello')).to.be(false);
+        });
+
+        it('should report false for functions', function () {
+            function fn () {
+            }
+
+            expect(A.isArrayLike(fn)).to.be(false);
+        });
+
+        it('should report false for strings', function () {
+            expect(A.isArrayLike('hello')).to.be(false);
+        });
+    });
+});
+
+function masterSuite (A) {
     const expect = A.expect;
 
     describe('an', function () {
@@ -1430,65 +1493,6 @@ function allTests (A) {
         });
     });
 
-    describe('ok', function () {
-        it('should match an array', function () {
-            expect([]).to.be.ok();
-
-            try {
-                expect([]).to.not.be.ok();
-            }
-            catch (e) {
-                expect(e.message).to.be('Expected [] to be falsy');
-            }
-        });
-        it('should match true', function () {
-            expect(true).to.be.ok();
-        });
-        it('should match a non-empty string', function () {
-            expect('abc').to.be.ok();
-        });
-        it('should match a non-zero number', function () {
-            expect(1).to.be.ok();
-        });
-        it('should match an object', function () {
-            expect({}).to.be.ok();
-        });
-
-        describe('not', function () {
-            it('should not match empty string', function () {
-                expect('').not.to.be.ok();
-                expect('').to.not.be.ok();
-
-                try {
-                    expect('').to.be.ok();
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected "" to be truthy`);
-                }
-            });
-            it('should not match false', function () {
-                expect(false).not.to.be.ok();
-                expect(false).to.not.be.ok();
-            });
-            it('should not match NaN', function () {
-                expect(NaN).not.to.be.ok();
-                expect(NaN).to.not.be.ok();
-            });
-            it('should not match null', function () {
-                expect(null).not.to.be.ok();
-                expect(null).to.not.be.ok();
-            });
-            it('should not match undefined', function () {
-                expect(undefined).not.to.be.ok();
-                expect(undefined).to.not.be.ok();
-            });
-            it('should not match zero', function () {
-                expect(0).not.to.be.ok();
-                expect(0).to.not.be.ok();
-            });
-        });
-    });
-
     describe('property', function () {
         const a = { a: 1 };
         const a2 = Object.create(a);
@@ -1981,6 +1985,65 @@ function allTests (A) {
         });
     }); // throw
 
+    describe('truthy', function () {
+        it('should match an array', function () {
+            expect([]).to.be.truthy();
+
+            try {
+                expect([]).to.not.be.truthy();
+            }
+            catch (e) {
+                expect(e.message).to.be('Expected [] to be falsy');
+            }
+        });
+        it('should match true', function () {
+            expect(true).to.be.truthy();
+        });
+        it('should match a non-empty string', function () {
+            expect('abc').to.be.truthy();
+        });
+        it('should match a non-zero number', function () {
+            expect(1).to.be.truthy();
+        });
+        it('should match an object', function () {
+            expect({}).to.be.truthy();
+        });
+
+        describe('not', function () {
+            it('should not match empty string', function () {
+                expect('').not.to.be.truthy();
+                expect('').to.not.be.truthy();
+
+                try {
+                    expect('').to.be.truthy();
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected "" to be truthy`);
+                }
+            });
+            it('should not match false', function () {
+                expect(false).not.to.be.truthy();
+                expect(false).to.not.be.truthy();
+            });
+            it('should not match NaN', function () {
+                expect(NaN).not.to.be.truthy();
+                expect(NaN).to.not.be.truthy();
+            });
+            it('should not match null', function () {
+                expect(null).not.to.be.truthy();
+                expect(null).to.not.be.truthy();
+            });
+            it('should not match undefined', function () {
+                expect(undefined).not.to.be.truthy();
+                expect(undefined).to.not.be.truthy();
+            });
+            it('should not match zero', function () {
+                expect(0).not.to.be.truthy();
+                expect(0).to.not.be.truthy();
+            });
+        });
+    });
+
     describe('within', function () {
         describe('default ranges', function () {
             it('should handle value below lower-bound', function () {
@@ -2132,5 +2195,5 @@ function allTests (A) {
 }
 
 describe('Assert', function () {
-    allTests(Assert);
+    masterSuite(Assert);
 });

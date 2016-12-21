@@ -2,6 +2,7 @@
 
 const BE = ['be'];
 const ROOT = ['$'];
+const TO = ['to'];
 
 const arraySlice = Array.prototype.slice;
 const toString = Object.prototype.toString;
@@ -153,25 +154,34 @@ class Assert {
             after = a && a.split(',');
         }
 
+        if (t === 'function') {
+            def = { fn: fn };
+        } else {
+            fn = def.fn;
+        }
+
         let names = name.split(',');
         name = names[0];
+
+        after = after || (fn ? (name === 'be' ? TO : BE) : ROOT);
+        if (after.indexOf('to') > -1 && after.indexOf('not') < 0) {
+            after = ['not'].concat(after);
+        }
 
         if (t === 'string' || Array.isArray(def)) {
             for (let s of names) {
                 A._addBit(P, s, name);
-                A._getEntry('$').add(s);
+                //A._getEntry('$').add(s);
+                for (let a of after) {
+                    entry = A._getEntry(a);
+                    entry.add(s);
+                }
 
                 entry = A._getEntry(s, name);
                 entry.add(def);
             }
 
             return;
-        }
-
-        if (t === 'function') {
-            def = { fn: fn };
-        } else {
-            fn = def.fn;
         }
 
         let wrap = fn && function (...expected) {
@@ -183,11 +193,6 @@ class Assert {
 
             return me.afterTest();
         };
-
-        after = after || (fn && name !== 'be' ? BE : ROOT);
-        if (after.indexOf('to') > -1 && after.indexOf('not') < 0) {
-            after = ['not'].concat(after);
-        }
 
         for (let s of names) {
             entry = A._getEntry(s, name);
@@ -223,10 +228,11 @@ class Assert {
         const A = this;
 
         A.register({
-            not:  ['to', 'be', 'have', 'include', 'only'],
-            to:   ['be', 'have', 'include', 'only', 'not'],
-            only: ['have', 'own'],
-            have: ['own', 'only'],
+            not: ['to'],
+            to:  ['not'],
+
+            'to.only': ['have', 'own'],
+            'to.have': ['own', 'only'],
 
             'a,an': {
                 fn (actual, expected) {
@@ -384,24 +390,6 @@ class Assert {
                 }
             },
 
-            ok: {
-                fn (actual) {
-                    return !!actual;
-                },
-                explain () {
-                    let assertions = this.assertions;
-                    let not = this.modifiers.not;
-
-                    assertions.pop(); // remove "ok"
-
-                    if (not) {
-                        assertions.splice(assertions.indexOf('not'), 1);
-                    }
-
-                    this.expectation = not ? 'falsy' : 'truthy';
-                }
-            },
-
             'have,only,own|property': {
                 fn (object, property, value) {
                     let only = this.modifiers.only;
@@ -475,6 +463,24 @@ class Assert {
                 }
 
                 return ok;
+            },
+
+            'truthy,ok': {
+                fn (actual) {
+                    return !!actual;
+                },
+                explain () {
+                    let assertions = this.assertions;
+                    let not = this.modifiers.not;
+
+                    assertions.pop(); // remove "truthy"
+
+                    if (not) {
+                        assertions.splice(assertions.indexOf('not'), 1);
+                    }
+
+                    this.expectation = not ? 'falsy' : 'truthy';
+                }
             },
 
             within (actual, min, max, constraint) {
@@ -627,6 +633,10 @@ class Assert {
     }
 
     static isArrayLike (v) {
+        if (!v || this._notArrayLikeRe.test(typeof v)) {
+            return false;
+        }
+
         if (v && v.hasOwnProperty('length') && typeof v.length === 'number') {
             if (v.propertyIsEnumerable && !v.propertyIsEnumerable('length')) {
                 // Object has an own, non-enumerable "length" property that is a number
@@ -784,6 +794,7 @@ class Assert {
     }
 } // Assert
 
+Assert._notArrayLikeRe = /function|string/;
 Assert.rangeRe = /^\s*([\[(])\s*(\d+),\s*(\d+)\s*([\])])\s*$/;
 Assert.tupleRe = /[\.|\/]/;
 
@@ -832,4 +843,4 @@ Assert.Modifier = class {
     }
 };
 
-export default Assert;
+module.exports = Assert;
