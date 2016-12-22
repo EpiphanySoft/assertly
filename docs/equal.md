@@ -10,7 +10,7 @@ same logic. In other words, the following passes:
         a: [ 2 ]
     };
 
-    expect(o).to.equal({ a: [ '2' ] }
+    expect(o).to.equal({ a: [ '2' ] });
 
 Objects must have all the same keys and arrays must have exactly the same numbers of
 elements.

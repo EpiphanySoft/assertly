@@ -30,15 +30,20 @@ The `a` or (`an`) assertion is useful for type matching. For example:
     expect(a).to.be.an('array');
     expect(b).to.be.a('boolean');
 
+Type names are derived from `Object.prototype.toString`.
+
 Alternatively, a constructor can be passed:
 
     class T {
         // ...
     }
 
-    expect(new T()).to.be.a(T);
+    var t = new T();
+    expect(t).to.be.a(T);
 
-Type names are derived from `Object.prototype.toString`.
+The above is equivalent to:
+
+    expect(t instanceof T).to.be(true);
 
 
 ### approx (aka: "approximately")
@@ -108,7 +113,7 @@ same logic. In other words, the following passes:
         a: [ 2 ]
     };
 
-    expect(o).to.equal({ a: [ '2' ] }
+    expect(o).to.equal({ a: [ '2' ] });
 
 Objects must have all the same keys and arrays must have exactly the same numbers of
 elements.
@@ -118,94 +123,272 @@ elements.
 
  - to[.not].be.greaterThan
 
-The `greaterThan` assertion 
+The `greaterThan` assertion compares values using `>`.
+
+For example:
+
+    expect(4).to.be.greaterThan(2);
+
+There is also the `gt` alias for brevity:
+
+    expect(4).to.be.gt(2);
+
 
 ### greaterThanOrEqual (aka: "atLeast", "ge", "gte")
 
  - to[.not].be.greaterThanOrEqual
 
-TODO
+The `greaterThanOrEqual` assertion compares values using `>=`.
+
+For example:
+
+    expect(4).to.be.greaterThanOrEqual(2);
+
+There is also the `ge` alias for brevity:
+
+    expect(4).to.be.ge(2);
+
 
 ### in
 
  - to[.not].be.in
 
-TODO
+The `in` assertion determines if the `actual` value is present using `indexOf`. This
+enables both strings and arrays to be used as values.
+
+For example:
+
+    expect('def').to.be.in('abcdefgh');
+
+    expect(2).to.be.in([1, 2, 3, 4]);
+
+The above statements are equivalent to these:
+
+    expect('abcdefgh'.indexOf('def')).to.be.ge(0);
+
+    expect([1, 2, 3, 4].indexOf(2)).to.be.ge(0);
+
 
 ### key (aka: "keys")
 
  - to[.not].only.have.own.key
  - to[.not].only.have.key
- - to[.not].only.own.key
- - to[.not].only.key
  - to[.not].have.own.key
  - to[.not].have.only.own.key
  - to[.not].have.only.key
  - to[.not].have.key
 
-TODO
+The `key` or `keys` assertion checks that a given set of property names ("keys") are
+present on the given value.
+
+For example:
+
+    let o = { a: 1 };
+
+    expect(o).to.have.key('a');
+
+You can check for multiple keys as well:
+
+    let o = { a: 1, b: 2 };
+
+    expect(o).to.have.keys('a', 'b');
+
+You can combined this with `own` to filter out inherited properties:
+
+    let a = { a: 1 };
+    let b = Object.create(a);
+
+    expect(b).to.have.own.key('a');  // fails because "a" is inherited
+
+The `only` modifier is also useful to ensure that no other keys are present.
+
+For example:
+
+    let o = { a: 1, b: 2 };
+
+    expect(o).to.only.have.key('a');  // fails because "b" is also present
+
+Of course these can be combined:
+
+    let a = { a: 1 };
+    let b = Object.create(a);
+
+    b.b = 2;
+
+    expect(b).to.have.only.own.key('a');
+
+This assertion succeeds because, while "b" inherits the "a" property, "b" is the
+only "own" property (as defined by `hasOwnProperty`).
+
 
 ### length
 
  - to[.not].only.have.length
  - to[.not].have.length
 
-TODO
+This assertion checks that the `length` property is a certain value.
+
+For example:
+
+    expect(x).to.have.length(4);
+
+The above is equivalent to:
+
+    expect(x).to.have.property('length', 4);
+
 
 ### lessThan (aka: "below", "lt")
 
  - to[.not].be.lessThan
 
-TODO
+The `lessThan` assertion compares values using `<`.
+
+For example:
+
+    expect(2).to.be.lessThan(4);
+
+There is also the `lt` alias for brevity:
+
+    expect(2).to.be.lt(4);
+
 
 ### lessThanOrEqual (aka: "atMost", "le", "lte")
 
  - to[.not].be.lessThanOrEqual
 
-TODO
+The `lessThanOrEqual` assertion compares values using `<=`.
+
+For example:
+
+    expect(2).to.be.lessThanOrEqual(4);
+
+There is also the `le` alias for brevity:
+
+    expect(2).to.be.le(4);
+
 
 ### match
 
  - to[.not].match
 
-TODO
+The `match` assertion checks that the `actual` value match an expected `RegExp`.
+
+For example:
+
+    expect('WORLD').to.match(/world/i);
+
+Further:
+
+    expect(2).to.match(/\d+/);
+
+The above works because the `actual` value (2 above) is first converted to a string.
+
 
 ### nan (aka: "NaN")
 
  - to[.not].be.nan
 
-TODO
+The `nan` assertion ensures that a value `isNaN()`.
+
+For example:
+
+    expect(x).to.be.nan();
+
+The above is equivalent to:
+
+    expect(isNaN(x)).to.be(true);
+
 
 ### property
 
  - to[.not].only.have.own.property
  - to[.not].only.have.property
- - to[.not].only.own.property
- - to[.not].only.property
  - to[.not].have.own.property
  - to[.not].have.only.own.property
  - to[.not].have.only.property
  - to[.not].have.property
 
-TODO
+The `property` assertion is very similar to the `key`/`keys` assertion. The difference
+being that while `keys` can check for the presence of multiple properties, this assertion
+instead can check that a property has a particular value.
+
+For example:
+
+    let o = { a: 1 };
+
+    expect(o).to.have.property('a');     // same as to.have.key('a')
+    expect(o).to.have.property('a', 1);  // checks that o.a === 1
+
+Also, as with `key`, the `own` and `only` modifiers can be added to tighten the check.
+
 
 ### same
 
  - to[.not].be.same
 
-TODO
+The `same` assertion compares the `actual` and `expected` values much like `equal` in
+that array elements and object properties are compared recursively. The difference is
+that while `equal` uses the `==` operator (and hence allows for type conversions), the
+`same` assertion uses `===` (like `be`).
+
+This means that for non-arrays and non-objects, `same` is equivalent to `be`.
+
+    expect(1).to.equal('1');  // fails since 1 !== '1'
+
+    expect(1).to.equal(1);   // succeeds just like "to.be(1)"
+
+For object and arrays, `equal` compares corresponding properties and elements with the
+same logic. In other words, the following passes for `equal` and fails for `same``:
+
+    let a = {
+        a: [ 2 ]
+    };
+
+    let b = {
+        a: [ '2' ]
+    }
+
+    expect(a).to.equal(b);      // passes since 2 == '2'
+    expect(a).to.be.same(b);    // fails because 2 !== '2'
+
+Objects must have all the same keys and arrays must have exactly the same numbers of
+elements.
+
 
 ### throw
 
  - to[.not].throw
 
-TODO
+The `throw` assertion ensures that a function throws an exception.
+
+For example:
+
+    function foo () {
+        throw new Error('Some error');
+    }
+
+    expect(foo).to.throw();
+
+The error message can also be checked:
+
+    expect(foo).to.throw('Some error');
+
 
 ### truthy (aka: "ok")
 
  - to[.not].be.truthy
 
-TODO
+The `truthy` assertion ensures that the `actual` value is "true-like". In other
+words, that it would satisfy an `if` test.
+
+For example:
+
+    expect(x).to.be.truthy();
+
+The above is equivalent to:
+
+    expect(!!x).to.be(true);
+
 
 ### within
 
