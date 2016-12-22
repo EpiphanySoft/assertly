@@ -499,7 +499,7 @@ class Assert {
                 }
                 else {
                     lo = '[';
-                    hi = ')';
+                    hi = ']';
                 }
 
                 if (lo === '[' ? actual < min : actual <= min) {

@@ -2060,8 +2060,7 @@ function masterSuite (A) {
             });
 
             it('should handle value at upper-bound', function () {
-                expect(2).not.to.be.within(0, 2);
-                expect(2).to.not.be.within(0, 2);
+                expect(2).to.be.within(0, 2);
             });
 
             it('should handle value above upper-bound', function () {
