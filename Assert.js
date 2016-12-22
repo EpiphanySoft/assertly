@@ -33,25 +33,89 @@ class Assert {
     }
 
     afterTest () {
-        let A = this.constructor;
-
-        return {
-            and: new A(this.value)
+        let me = this;
+        let async = me.async;
+        let A = me.constructor;
+        let conjunction = {
+            and: new A(me.value)
         };
+
+        if (async) {
+            conjunction.then = async.then.bind(async);
+        }
+
+        return conjunction;
     }
 
-    beforeTest (def, expected) {
-        this.expected = expected;
-        this.def = def;
+    beginTest (def, expected) {
+        let me = this;
+        let A = me.constructor;
+        let async = me.async;
+        let previous = A._previous;
+
+        me.def = def;
+
+        if (previous && !async) {
+            me.async = previous.async.then(() => {
+                me.beginTest(def, expected);
+                return me.async; // this is reassigned below
+            },
+            e => {
+                if (A._previous === me) {
+                    // If this is the end of the line of assertions, clean things up
+                    A._previous = null;
+                }
+
+                throw e;
+            });
+
+            // This assert was made after some other async asserts, so get in line...
+            A._previous = me;
+        }
+        else if (async || A._isPromise(me.value) || A._isPromise(...expected)) {
+            me.async = A.Promise.all(expected.concat(me.value)).then(values => {
+                me.expected = values;
+                me.value = values.pop();
+
+                if (A._previous === me) {
+                    // If this is the end of the line of assertions, clean things up
+                    A._previous = null;
+                }
+
+                me.doTest();
+                me.report();
+            },
+            e => {
+                if (A._previous === me) {
+                    A._previous = null;
+                }
+
+                me.doFailure(e);
+                me.report();
+            });
+
+            if (!async) {
+                // This is the first async assert, so start the line with it...
+                A._previous = me;
+            }
+        }
+        else {
+            me.expected = expected;
+        }
+    }
+
+    doFailure (e) {
+        this.failed = e;
     }
 
     doTest () {
         let me = this;
+        let expected = me.expected;
 
-        me.failed = !me.def.fn.call(me, me.value, ...me.expected);
+        if (expected) {
+            let result = !me.def.fn.call(me, me.value, ...expected);
 
-        if (me.modifiers.not) {
-            me.failed = !me.failed;
+            me.failed = me.modifiers.not ? !result : result;
         }
     }
 
@@ -82,6 +146,14 @@ class Assert {
         }
 
         return ret;
+    }
+
+    static finish () {
+        let prev = this._previous;
+
+        this._previous = null;
+
+        return prev && prev.async;
     }
 
     prop (name) {
@@ -184,15 +256,7 @@ class Assert {
             return;
         }
 
-        let wrap = fn && function (...expected) {
-            let me = this;
-
-            me.beforeTest(def, expected);
-            me.doTest();
-            me.report();
-
-            return me.afterTest();
-        };
+        let wrap = fn && A.wrapAssertion(def);
 
         for (let s of names) {
             entry = A._getEntry(s, name);
@@ -213,9 +277,23 @@ class Assert {
         }
     } // register
 
-    static report (result) {
-        if (result.failed) {
-            this.reportFailure(result.explain(), result);
+    static report (assertion) {
+        let failure = assertion.failed;
+
+        if (assertion.async) {
+            //
+        }
+
+        if (this.log) {
+            this.log.push(assertion);
+        }
+
+        if (failure) {
+            if (failure === true) {
+                assertion.failed = failure = assertion.explain();
+            }
+
+            this.reportFailure(failure, assertion);
         }
     }
 
@@ -511,6 +589,18 @@ class Assert {
         });
     } // setup
 
+    static wrapAssertion (def) {
+        return function (...expected) {
+            let me = this;
+
+            me.beginTest(def, expected);
+            me.doTest();
+            me.report();
+
+            return me.afterTest();
+        };
+    }
+
     //-----------------------------------------------------------------------
     // Private
 
@@ -726,12 +816,22 @@ class Assert {
 
         for (i = 0; i < n; ++i) {
             k = keys1[i];
-            if (!this.isEqual(o1[i], o2[i], strict)) {
+            if (!this.isEqual(o1[k], o2[k], strict)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    static _isPromise (...obj) {
+        for (let o of obj) {
+            if (o && this.promiseTypesRe.test(typeof o) && typeof o.then === 'function') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     static _print (obj) {
@@ -795,6 +895,7 @@ class Assert {
 } // Assert
 
 Assert._notArrayLikeRe = /function|string/;
+Assert.promiseTypesRe = /function|object/;
 Assert.rangeRe = /^\s*([\[(])\s*(\d+),\s*(\d+)\s*([\])])\s*$/;
 Assert.tupleRe = /[\.|\/]/;
 
@@ -842,5 +943,11 @@ Assert.Modifier = class {
         return this.owner.entries[name];
     }
 };
+
+Assert.Promise = (typeof Promise !== 'undefined') && Promise.resolve && Promise;
+
+Object.assign(Assert.prototype, {
+    async: null
+});
 
 module.exports = Assert;

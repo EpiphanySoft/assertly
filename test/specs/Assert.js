@@ -2191,6 +2191,180 @@ function masterSuite (A) {
             });
         });
     }); // within
+
+    describe('Promises', function () {
+        let emptyFn = () => {};
+
+        beforeEach(function () {
+            A.log = [];
+        });
+
+        afterEach(function () {
+            expect(A._previous === null).to.be(true);
+            A.log = null;
+        });
+
+        function delay (ms, value) {
+            return new A.Promise((resolve, reject) => {
+                setTimeout(() => {
+                    if (value instanceof Error) {
+                        reject(value);
+                    }
+                    else {
+                        resolve(value);
+                    }
+                }, ms);
+            });
+        }
+
+        it('should wait for expectation to resolve', function () {
+            return expect('xyz').to.be(delay(10, 'xyz')).then(() => {
+                let a = A.log[0];
+
+                expect(A.log.length).to.be(1);
+                expect(a.failed).to.be(false);
+                expect(a.value).to.be('xyz');
+                expect(a.expected).to.equal(['xyz']);
+            });
+        });
+
+        it('should wait for expectation and value to resolve', function () {
+            return expect(delay(20, 'def')).to.be(delay(10, 'def')).then(() => {
+                let a = A.log[0];
+
+                expect(A.log.length).to.be(1);
+                expect(a.failed).to.be(false);
+                expect(a.value).to.be('def');
+                expect(a.expected).to.equal(['def']);
+            });
+        });
+
+        it('should wait for value to resolve', function () {
+            return expect(delay(10, 'abc')).to.be('abc').then(() => {
+                let a = A.log[0];
+
+                expect(A.log.length).to.be(1);
+                expect(a.failed).to.be(false);
+                expect(a.value).to.be('abc');
+                expect(a.expected).to.equal(['abc']);
+            });
+        });
+
+        it('should wait for value and expectation to resolve', function () {
+            let o = {a: 1};
+            let v = {a: 1};
+
+            return expect(delay(10, o)).to.equal(delay(20, v)).then(() => {
+                let a = A.log[0];
+
+                expect(A.log.length).to.be(1);
+                expect(a.failed).to.be(false);
+                expect(a.value).to.be(o);
+                expect(a.expected).to.be.same([v]);
+            });
+        });
+
+        it('should wait for value and expectation to resolve and report failure', function () {
+            let o = {a: 1};
+            let v = {a: 2};
+
+            return expect(delay(10, o)).to.equal(delay(20, v)).then(() => {
+                throw new Error('Expected values to not match');
+            }, e => {
+                let a = A.log[0];
+
+                expect(A.log.length).to.be(1);
+                expect(a.failed).to.be(`Expected {"a":1} to equal {"a":2}`);
+                expect(a.value).to.be(o);
+                expect(a.expected).to.be.same([v]);
+            });
+        });
+
+        it('should handle value rejection', function () {
+            return expect(delay(10, new Error('Boom'))).to.be('abc').then(() => {
+                throw new Error('Rejection did not propagate.');
+            },
+            e => {
+                let a = A.log[0];
+
+                expect(A.log.length).to.be(1);
+                expect(a.failed).to.be.an('error');
+                expect(a.failed.message).to.be('Boom');
+            });
+        });
+
+        it('should handle expectation rejection', function () {
+            return expect('abc').to.be(delay(10, new Error('Bam'))).then(() => {
+                throw new Error('Rejection did not propagate.');
+            },
+            e => {
+                let a = A.log[0];
+
+                expect(A.log.length).to.be(1);
+                expect(a.failed).to.be.an('error');
+                expect(a.failed.message).to.be('Bam');
+            });
+        });
+
+        it('should handle out-of-order expectation completion', function () {
+            expect(delay(20, 'xyz')).to.be('xyz');
+
+            // The first delay will complete much later then the next one:
+            return expect('abc').to.be(delay(0, 'abc')).then(() => {
+                let a = A.log[0];
+
+                expect(A.log.length).to.be(2);
+
+                // But the report should be in order:
+                expect(a.failed).to.be(false);
+                expect(a.value).to.be('xyz');
+                expect(a.expected).to.equal(['xyz']);
+
+                a = A.log[1];
+                expect(a.failed).to.be(false);
+                expect(a.value).to.be('abc');
+                expect(a.expected).to.equal(['abc']);
+            });
+        });
+
+        it('should handle out-of-order expectation failures', function () {
+            expect(delay(20, 'xyz')).to.be('def');
+
+            // The first delay will complete much later then the next one:
+            return expect('abc').to.be(delay(0, 'abc')).then(() => {
+                throw new Error('Expectation failure did not propagate');
+            },
+            e => {
+                let log = A.log;
+                let a = log[0];
+
+                expect(log.length).to.be(1);
+                expect(e.message).to.be(`Expected "xyz" to be "def"`);
+
+                // But the report should be in order:
+                expect(a.failed).to.be(e.message);
+                expect(a.value).to.be('xyz');
+                expect(a.expected).to.equal(['def']);
+            });
+        });
+
+        it('should handle out-of-order expectation rejection', function () {
+            expect(delay(20, new Error('Zap!'))).to.be('xyz');
+
+            // The first delay will complete much later then the next one:
+            return expect('abc').to.be(delay(0, 'abc')).then(() => {
+                throw new Error('Rejection did not propagate');
+            },
+            e => {
+                let a = A.log[0];
+
+                expect(A.log.length).to.be(1);
+
+                expect(a.failed).to.be.an('error');
+                expect(a.failed.message).to.be('Zap!');
+            });
+        });
+    });
 }
 
 describe('Assert', function () {

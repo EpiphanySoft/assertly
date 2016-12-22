@@ -2,12 +2,15 @@
 Assert class for BDD-style assertions.
 
 Assertly was inspired by [expect.js](https://github.com/Automattic/expect.js) and implements
-almost the same interface. There are some additional goals, however, that led to this
-library:
+almost the same interface. Some additional inspiration for assertions came from the
+[Chai Assert](http://chaijs.com/api/assert/) and [Chai BDD](http://chaijs.com/api/bdd/)
+API's as well.
 
- - Extensibility
- - Integration
- - Promises
+There are some additional goals, however, that led to this library:
+
+ - [Extensibility](docs/Extensibility.md)
+ - [Integration](docs/Integration.md)
+ - [Promises](docs/Promises.md)
 
 # API
 
@@ -15,11 +18,25 @@ library:
 
 ### not
 
-### only
+The `not` modifier simply negates the result of the test. This is somewhat different
+then [expect.js](https://github.com/Automattic/expect.js) in some cases, but pure
+negation seems much more intuitive.
 
-### own
+### only / own
+
+These modifiers apply to `keys` and `property` assertions to restrict what is allowed
+to match the criteria. The `only` modifier restricts the assertion such that it will
+fail if other keys or properties are present.
+
+The `own` modifier restricts consideration to "own properties" (as in `hasOwnProperty()`).
+All inherited properties are ignored when `own` is specified.
 
 ## Assertions
+
+Following are the assertion methods and their common aliases ("aka" = "also known as").
+The remainder of this document can be regenerated using:
+
+    npm run print >> README.md
 
 ### a (aka: "an")
 
