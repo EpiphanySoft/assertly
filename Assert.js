@@ -115,8 +115,8 @@ class Assert {
 
         const A = me.constructor;
 
-        me.actual = A._print(me.value);
-        me.expectation = me.expectation || (n ? A._print(n === 1 ? exp[0] : exp) : '');
+        me.actual = A.print(me.value);
+        me.expectation = me.expectation || (n ? A.print(n === 1 ? exp[0] : exp) : '');
 
         let mods = Object.keys(me.modifiers);
 
@@ -148,14 +148,6 @@ class Assert {
         }
 
         return conjunction;
-    }
-
-    static finish () {
-        let prev = this._previous;
-
-        this._previous = null;
-
-        return prev && prev.async;
     }
 
     prop (name) {
@@ -352,7 +344,7 @@ class Assert {
                     epsilon = epsilon || 0.001;
 
                     this.assertions.pop(); // remove "approximately"
-                    this.expectation = `${A._print(expected)} ± ${A._print(epsilon)}`;
+                    this.expectation = `${A.print(expected)} ± ${A.print(epsilon)}`;
                 }
             },
 
@@ -505,7 +497,7 @@ class Assert {
                 },
                 explain (object, property, value) {
                     if (value !== undefined) {
-                        this.expectation = `${A._print(property)} === ${A._print(value)}`;
+                        this.expectation = `${A.print(property)} === ${A.print(value)}`;
                     }
                 }
             },
@@ -836,7 +828,7 @@ class Assert {
         return false;
     }
 
-    static _print (obj) {
+    static print (obj) {
         let t = this.typeOf(obj);
 
         if (t === 'arguments') {
@@ -850,7 +842,7 @@ class Assert {
         }
         else if (t === 'error') {
             if (obj.message) {
-                return `${obj.name}(${this._print(obj.message)})`;
+                return `${obj.name}(${this.print(obj.message)})`;
             }
             return `${obj.name}`;
         }

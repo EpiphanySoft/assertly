@@ -9,7 +9,7 @@ necessary. Since testing is a much more controlled environment, it is not nearly
 "hackish" to modify the `Assert` class and **assertly** tries to make this process as
 straightforward as possible.
 
-## Instance Methods
+## Assert Life-Cycle Methods
 
 Each `Assert` instance goes through a simple life-cycle:
 
@@ -17,6 +17,7 @@ Each `Assert` instance goes through a simple life-cycle:
  - before
  - begin
  - assertion
+ - explain
  - failure
  - report
  - finish
@@ -52,7 +53,23 @@ is inverted.
 
 This method will set the `failed` property (possibly to `false`).
 
-This method does nothing if called before `this.expected` is set.
+This method does nothing if called before the `expected` instance property is set
+by `begin`.
+
+### explain
+
+This method is called to generate a string to explain an assertion. It is only
+called (by default) when an assertion fails. It is called by `report` before the
+instance is passed to the `Assert.report()` static method (more below).
+
+In the act of generating the explanation, several other properties are set:
+
+ - `actual` - A string with the printed (`Assert.print`) `value`.
+ - `assertions` - A String[] of the modifiers followed by the assertion.
+ - `expectation` - A string with the printed (`Assert.print`) `expected`.
+
+These are primarily of interest when writing custom assertions. See
+[Extensibility](./Extensibility.md).
 
 ### failure
 
@@ -61,14 +78,25 @@ evaluated. This sets `failed` to the `Error` object given.
 
 ### report
 
-This method does nothing if called before `this.failed` is set.
+This method is called to report the `Assert` results. Before passing on to the
+`Assert.report()` static method (see below), this method ensures that the `failed`
+property (if set to `true`) has been converted to a string explaining the failure.
+
+This method does nothing if called before the `failed` instance property is set
+by `assertion`.
 
 ### finish
+
+This method is called at the end of the life-cycle. It returns an object that
+can be used as a conjunction (via `and`) or a promise (via `then`) if the assertion
+was asynchronous.
 
 ## Static Methods
 
 The static methods of `Assert` can be used to observe or influence all instances
 of the `Assert` (or derived) class.
+
+### print
 
 ### report
 
@@ -87,4 +115,7 @@ assertions.
 
 ### wrapAssertion
 
-This method is called to
+This method is called to wrap the assertion definition (the sole argument) to
+provide the proper life-cycles (as described above). The returned function is
+what is returned by the property getter when the assertion is requested. For
+more details on an assertion definition see [Extensibility](./Extensibility.md).
