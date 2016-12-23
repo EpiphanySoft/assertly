@@ -34,9 +34,6 @@ All inherited properties are ignored when `own` is specified.
 ## Assertions
 
 Following are the assertion methods and their common aliases ("aka" = "also known as").
-The remainder of this document can be regenerated using:
-
-    npm run print >> README.md
 
 ### a (aka: "an")
 

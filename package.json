@@ -6,8 +6,8 @@
   "scripts": {
     "debug": "devtool node_modules/mocha/bin/_mocha -qc --break -- ./test/specs/**/*.js",
     "debugx": "devtool node_modules/mocha/bin/_mocha -qc --break -- --compilers js:babel-core/register --require babel-polyfill ./test/specs/**/*.js",
-    "debug-print": "devtool print.js",
-    "print": "node print.js",
+    "docs": "node docs.js",
+    "docs-debug": "devtool docs.js",
     "test": "mocha ./test/specs/**/*.js",
     "testx": "mocha --compilers js:babel-core/register --require babel-polyfill ./test/specs/**/*.js"
   },

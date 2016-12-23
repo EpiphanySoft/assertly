@@ -1,5 +1,7 @@
 'use strict';
 
+const inspect = require('./inspect');
+
 const BE = ['be'];
 const ROOT = ['$'];
 const TO = ['to'];
@@ -828,43 +830,44 @@ class Assert {
         return false;
     }
 
-    static print (obj) {
-        let t = this.typeOf(obj);
-
-        if (t === 'arguments') {
-            obj = arraySlice.call(obj);
-        }
-        else if (t === 'function') {
-            return obj.$className || obj.name || 'anonymous-function';
-        }
-        else if (t === 'date') {
-            return obj.toISOString();
-        }
-        else if (t === 'error') {
-            if (obj.message) {
-                return `${obj.name}(${this.print(obj.message)})`;
-            }
-            return `${obj.name}`;
-        }
-        else if (t === 'regexp') {
-            return String(obj);
-        }
-        else if (t === 'number') {
-            if (isNaN(obj)) {
-                return 'NaN';
-            }
-            if (!isFinite(obj)) {
-                return obj < 0 ? '-∞' : '∞';
-            }
-            if (!obj && 1 / obj < 0) {
-                // 0 and -0 are different things... sadly 0 === -0 but we can
-                // tell them apart by dropping them in a denominator since 0
-                // produces Infinity and -0 produces -Infinity
-                return '-0';
-            }
-        }
-
-        return JSON.stringify(obj);
+    static print (obj, options) {
+        return inspect(obj, options);
+        // let t = this.typeOf(obj);
+        //
+        // if (t === 'arguments') {
+        //     obj = arraySlice.call(obj);
+        // }
+        // else if (t === 'function') {
+        //     return obj.$className || obj.name || 'anonymous-function';
+        // }
+        // else if (t === 'date') {
+        //     return obj.toISOString();
+        // }
+        // else if (t === 'error') {
+        //     if (obj.message) {
+        //         return `${obj.name}(${this.print(obj.message)})`;
+        //     }
+        //     return `${obj.name}`;
+        // }
+        // else if (t === 'regexp') {
+        //     return String(obj);
+        // }
+        // else if (t === 'number') {
+        //     if (isNaN(obj)) {
+        //         return 'NaN';
+        //     }
+        //     if (!isFinite(obj)) {
+        //         return obj < 0 ? '-∞' : '∞';
+        //     }
+        //     if (!obj && 1 / obj < 0) {
+        //         // 0 and -0 are different things... sadly 0 === -0 but we can
+        //         // tell them apart by dropping them in a denominator since 0
+        //         // produces Infinity and -0 produces -Infinity
+        //         return '-0';
+        //     }
+        // }
+        //
+        // return JSON.stringify(obj);
     }
 
     static typeOf (v) {
