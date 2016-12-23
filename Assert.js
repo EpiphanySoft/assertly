@@ -280,10 +280,6 @@ class Assert {
     static report (assertion) {
         let failure = assertion.failed;
 
-        if (assertion.async) {
-            //
-        }
-
         if (this.log) {
             this.log.push(assertion);
         }
