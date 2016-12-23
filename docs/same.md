@@ -5,11 +5,11 @@ that while `equal` uses the `==` operator (and hence allows for type conversions
 
 This means that for non-arrays and non-objects, `same` is equivalent to `be`.
 
-    expect(1).to.equal('1');  // fails since 1 !== '1'
+    expect(1).to.be.same('1');  // fails since 1 !== '1'
 
-    expect(1).to.equal(1);   // succeeds just like "to.be(1)"
+    expect(1).to.be.same(1);   // succeeds just like "to.be(1)"
 
-For object and arrays, `equal` compares corresponding properties and elements with the
+For object and arrays, `same` compares corresponding properties and elements with the
 same logic. In other words, the following passes for `equal` and fails for `same``:
 
     let a = {

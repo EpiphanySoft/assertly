@@ -54,7 +54,11 @@ own) asynchronous. Such as:
 
 Since the simple `expect(2).to.be(2)` assertion is synchronous, it would normally
 complete immediately. The first assertion, however, is asynchronous which is tracked
-to maintain the proper (FIFO) evaluation order.
+to maintain the proper (FIFO) evaluation order. Because of this tracking, the second
+assertion is implicitly asynchronous.
+
+This tracking of the previous assertion is cleared when the last assertion either
+resolves or rejects.
 
 ## Custom Promise Implementations
 

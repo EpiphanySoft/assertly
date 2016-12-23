@@ -35,7 +35,7 @@ Of course these can be combined:
 
     b.b = 2;
 
-    expect(b).to.have.only.own.key('a');
+    expect(b).to.have.only.own.key('b');
 
 This assertion succeeds because, while "b" inherits the "a" property, "b" is the
 only "own" property (as defined by `hasOwnProperty`).
