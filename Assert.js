@@ -32,32 +32,30 @@ class Assert {
         }
     }
 
-    afterTest () {
+    assertion () {
         let me = this;
-        let async = me.async;
-        let A = me.constructor;
-        let conjunction = {
-            and: new A(me.value)
-        };
+        let expected = me.expected;
 
-        if (async) {
-            conjunction.then = async.then.bind(async);
+        if (expected) {
+            let result = !me.def.fn.call(me, me.value, ...expected);
+
+            me.failed = me.modifiers.not ? !result : result;
         }
-
-        return conjunction;
     }
 
-    beginTest (def, expected) {
+    before (def) {
+        this.def = def;
+    }
+
+    begin (expected) {
         let me = this;
         let A = me.constructor;
         let async = me.async;
         let previous = A._previous;
 
-        me.def = def;
-
         if (previous && !async) {
             me.async = previous.async.then(() => {
-                me.beginTest(def, expected);
+                me.begin(expected);
                 return me.async; // this is reassigned below
             },
             e => {
@@ -82,7 +80,7 @@ class Assert {
                     A._previous = null;
                 }
 
-                me.doTest();
+                me.assertion();
                 me.report();
             },
             e => {
@@ -90,7 +88,7 @@ class Assert {
                     A._previous = null;
                 }
 
-                me.doFailure(e);
+                me.failure(e);
                 me.report();
             });
 
@@ -104,19 +102,8 @@ class Assert {
         }
     }
 
-    doFailure (e) {
+    failure (e) {
         this.failed = e;
-    }
-
-    doTest () {
-        let me = this;
-        let expected = me.expected;
-
-        if (expected) {
-            let result = !me.def.fn.call(me, me.value, ...expected);
-
-            me.failed = me.modifiers.not ? !result : result;
-        }
     }
 
     explain () {
@@ -148,6 +135,21 @@ class Assert {
         return ret;
     }
 
+    finish () {
+        let me = this;
+        let async = me.async;
+        let A = me.constructor;
+        let conjunction = {
+            and: new A(me.value)
+        };
+
+        if (async) {
+            conjunction.then = async.then.bind(async);
+        }
+
+        return conjunction;
+    }
+
     static finish () {
         let prev = this._previous;
 
@@ -165,8 +167,15 @@ class Assert {
     }
 
     report () {
-        if (this.hasOwnProperty('failed')) {
-            this.constructor.report(this);
+        let me = this;
+        let failure = me.failed;
+
+        if (me.hasOwnProperty('failed')) {
+            if (failure === true) {
+                me.failed = me.explain();
+            }
+
+            me.constructor.report(me);
         }
     }
 
@@ -285,10 +294,6 @@ class Assert {
         }
 
         if (failure) {
-            if (failure === true) {
-                assertion.failed = failure = assertion.explain();
-            }
-
             this.reportFailure(failure, assertion);
         }
     }
@@ -589,11 +594,12 @@ class Assert {
         return function (...expected) {
             let me = this;
 
-            me.beginTest(def, expected);
-            me.doTest();
+            me.before(def);
+            me.begin(expected);
+            me.assertion();
             me.report();
 
-            return me.afterTest();
+            return me.finish();
         };
     }
 

@@ -564,6 +564,8 @@ function masterSuite (A) {
             expect(1).to.be.a('number')
                 .and.to.be(1)
                 .and.to.be.within(0, 2);
+
+            expect(3).to.not.be(2).and.not.be.within(5, 10);
         });
     });
 
