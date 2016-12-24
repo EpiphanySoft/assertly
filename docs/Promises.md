@@ -60,6 +60,21 @@ assertion is implicitly asynchronous.
 This tracking of the previous assertion is cleared when the last assertion either
 resolves or rejects.
 
+To see this in action, consider this adjusted version:
+
+    it('should work asynchronously', function () {
+        expect(ajax('something.txt')).to.be('Some text').then(() => {
+                console.log('A');
+            });
+
+        return expect(2).to.be(2).then(() => {
+                console.log('B');
+            });
+    });
+
+The log statements will appear in "A" then "B" order as a side-effect of the internal
+FIFO ordering of asynchronous assertions.
+
 ## Custom Promise Implementations
 
 The native `Promise` constructor is feature detected and stored on the `Assert` class

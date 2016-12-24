@@ -2,15 +2,23 @@
 
 const inspect = require('./inspect').inspect;
 
-const BE = ['be'];
-const ROOT = ['$'];
-const TO = ['to'];
-
 const arraySlice = Array.prototype.slice;
 const toString = Object.prototype.toString;
 const toStringMap = {};
 const toStringRe = /^\[object ([^\]]+)]$/;
 const useTypeOfRe = /booolean|number|string|undefined/;
+
+function toArray (value) {
+    if (!value) {
+        return [];
+    }
+
+    if (!Array.isArray(value)) {
+        value = [value];
+    }
+
+    return value;
+}
 
 /**
  * @class Assert
@@ -173,136 +181,12 @@ class Assert {
         }
     }
 
-    /**
-     * Adds assertion methods.
-     *
-     *      Assert.register({
-     *          to: ['be', 'have', 'include', 'only', 'not'],
-     *
-     *          lt: {
-     *              test (actual, expected) {
-     *                  return actual < expected;
-     *              },
-     *
-     *              explain (actual, expected) {
-     *                  let not = this.modifiers.not ? 'not ' : '';
-     *                  return `Expected ${this.actual} to ${not}be less-than ${this.expected}`;
-     *              }
-     *          }
-     *      });
-     *
-     *      Assert.expect(42).to.be.lt(427);
-     *      //            ^^           ^^^
-     *      //        actual           expected
-     */
-    static register (name, def) {
-        const A = this;
-        const P = A.prototype;
-
-        if (typeof name !== 'string') {
-            let names = Object.keys(name);
-
-            names.forEach(key => A.register(key, name[key]));
-
-            names = Object.keys(A.entries);
-            for (let s of names) {
-                if (s !== '$' && !Object.getOwnPropertyDescriptor(P, s)) {
-                    A._addBit(P, s);
-                }
-            }
-
-            return;
-        }
-
-        let after, before, entry;
-        let fn = def;
-        let t = typeof def;
-
-        if (A.tupleRe.test(name)) {
-            // 'afters.name,alias.befores'
-            let tuples = name.split(A.tupleRe);
-            let a = tuples.shift();
-            name = tuples.shift();
-            let b = tuples[0];
-
-            before = b && b.split(',');
-            after = a && a.split(',');
-        }
-
-        if (t === 'function') {
-            def = { fn: fn };
-        } else {
-            fn = def.fn;
-        }
-
-        let names = name.split(',');
-        name = names[0];
-
-        after = after || (fn ? (name === 'be' ? TO : BE) : ROOT);
-        if (after.indexOf('to') > -1 && after.indexOf('not') < 0) {
-            after = ['not'].concat(after);
-        }
-
-        if (t === 'string' || Array.isArray(def)) {
-            for (let s of names) {
-                A._addBit(P, s, name);
-                //A._getEntry('$').add(s);
-                for (let a of after) {
-                    entry = A._getEntry(a);
-                    entry.add(s);
-                }
-
-                entry = A._getEntry(s, name);
-                entry.add(def);
-            }
-
-            return;
-        }
-
-        let wrap = fn && A.wrapAssertion(def);
-
-        for (let s of names) {
-            entry = A._getEntry(s, name);
-            entry.add(before);
-
-            if (fn) {
-                entry.fn = wrap;
-                A._addFn(P, s, wrap);
-            }
-            else {
-                A._addBit(P, s, name);
-            }
-
-            for (let a of after) {
-                entry = A._getEntry(a);
-                entry.add(s);
-            }
-        }
-    } // register
-
-    static report (assertion) {
-        let failure = assertion.failed;
-
-        if (this.log) {
-            this.log.push(assertion);
-        }
-
-        if (failure) {
-            this.reportFailure(failure, assertion);
-        }
-    }
-
-    static reportFailure (msg) {
-        //console.error(msg);
-        throw new Error(msg);
-    }
-
-    static setup () {
+    static getDefaults () {
         const A = this;
 
-        A.register({
-            not: ['to'],
-            to:  ['not'],
+        return this.normalize({
+            not: 'to',
+            to:  'not',
 
             'to.only': ['have', 'own'],
             'to.have': ['own', 'only'],
@@ -517,15 +401,14 @@ class Assert {
             },
 
             'to.throw' (fn, type) {
-                let ok = false;
+                let msg, ok = false;
 
                 try {
                     fn();
                 }
                 catch (e) {
                     ok = true;
-
-                    let msg = e.message;
+                    msg = e.message;
 
                     if (typeof type === 'string') {
                         ok = (msg.indexOf(type) > -1);
@@ -582,7 +465,131 @@ class Assert {
                 return hi === ']' ? actual <= max : actual < max;
             }
         });
-    } // setup
+    } // getDefaults
+
+    static normalize (registry) {
+        let A = this;
+        let ret = {};
+
+        for (let name of Object.keys(registry)) {
+            let def = registry[name];
+            let t = typeof def;
+
+            if (t === 'function') {
+                def = {
+                    fn: def
+                };
+            }
+            else if (t === 'string' || Array.isArray(def)) {
+                def = {
+                    before: def  // to: 'be'   OR   'to.have': ['only', 'own']
+                };
+            }
+
+            let after  = toArray(def.after);
+            let before = toArray(def.before);
+
+            if (A.tupleRe.test(name)) {
+                // 'afters.name,alias.befores'
+                let tuples = name.split(A.tupleRe);
+                let a = tuples.shift();
+                name = tuples.shift();
+                let b = tuples[0];
+
+                b = b && b.split(',');
+                a = a && a.split(',');
+
+                before = b ? before.concat(b) : before;
+                after  = a ? after.concat(a)  : after;
+            }
+
+            if (!after.length) {
+                after = [def.fn ? (name === 'be' ? 'to' : 'be') : '$'];
+            }
+            if (after.indexOf('to') > -1 && after.indexOf('not') < 0) {
+                after = ['not'].concat(after);
+            }
+
+            let names = name.split(',');
+            name = names.shift();
+
+            if (def.alias) {
+                names = names.concat(def.alias); // handle String or String[]
+            }
+
+            ret[name] = {
+                alias: names.length ? names : [],
+                after: after,
+                before: before,
+                explain: def.explain || null,
+                fn: def.fn || null,
+                name: name
+            };
+        }
+
+        return ret;
+    }
+
+    static register (name, def) {
+        const A = this;
+        const P = A.prototype;
+        const registry = A.normalize((typeof name === 'string') ? { [name] : def } : name);
+
+        for (name in registry) {
+            def = registry[name];
+
+            let fn = def.fn && A.wrapAssertion(def);
+            let names = [name].concat(def.alias);
+
+            for (let s of names) {
+                let entry = A._getEntry(s, name);
+                entry.add(def.before);
+
+                if (fn) {
+                    entry.fn = fn;
+                    A._addFn(P, s, fn);
+                }
+                else {
+                    A._addBit(P, s, name);
+                }
+
+                for (let a of def.after) {
+                    entry = A._getEntry(a);
+                    entry.add(s);
+                }
+            }
+        }
+
+        let names = Object.keys(A.registry);
+        for (let s of names) {
+            if (s !== '$' && !Object.getOwnPropertyDescriptor(P, s)) {
+                A._addBit(P, s);
+            }
+        }
+    }
+
+    static report (assertion) {
+        let failure = assertion.failed;
+
+        if (this.log) {
+            this.log.push(assertion);
+        }
+
+        if (failure) {
+            this.reportFailure(failure, assertion);
+        }
+    }
+
+    static reportFailure (msg) {
+        //console.error(msg);
+        throw new Error(msg);
+    }
+
+    static setup () {
+        let registry = this.getDefaults();
+
+        this.register(registry);
+    }
 
     static wrapAssertion (def) {
         return function (...expected) {
@@ -639,10 +646,6 @@ class Assert {
     static _addFn (target, modifier, fn) {
         const A = this;
         const entry = A._getEntry(modifier, false);
-
-        if (Object.getOwnPropertyDescriptor(target, modifier)) {
-            throw new Error(`Assertion method "${modifier}" already defined`);
-        }
 
         Object.defineProperty(target, modifier, {
             get () {
@@ -708,11 +711,11 @@ class Assert {
         }
 
         let A = this;
-        let entries = A.hasOwnProperty('entries') ? A.entries : (A.entries = {});
-        let entry = entries[name];
+        let registry = A.hasOwnProperty('registry') ? A.registry : (A.registry = {});
+        let entry = registry[name];
 
         if (!entry && autoCreate !== false) {
-            entries[name] = entry = new A.Modifier(A, name, canonicalName);
+            registry[name] = entry = new A.Modifier(A, name, canonicalName);
         }
 
         return entry;
@@ -839,47 +842,19 @@ class Assert {
             }
             return `${obj.name}`;
         }
-
-        if (t === 'arguments') {
+        else if (t === 'arguments') {
             obj = arraySlice.call(obj);
+        }
+        else if (t === 'number') {
+            if (isNaN(obj)) {
+                return 'NaN';
+            }
+            if (!isFinite(obj)) {
+                return obj < 0 ? '-∞' : '∞';
+            }
         }
 
         return inspect(obj, options);
-
-        // if (t === 'arguments') {
-        //     obj = arraySlice.call(obj);
-        // }
-        // else if (t === 'function') {
-        //     return obj.$className || obj.name || 'anonymous-function';
-        // }
-        // else if (t === 'date') {
-        //     return obj.toISOString();
-        // }
-        // else if (t === 'error') {
-        //     if (obj.message) {
-        //         return `${obj.name}(${this.print(obj.message)})`;
-        //     }
-        //     return `${obj.name}`;
-        // }
-        // else if (t === 'regexp') {
-        //     return String(obj);
-        // }
-        // else if (t === 'number') {
-        //     if (isNaN(obj)) {
-        //         return 'NaN';
-        //     }
-        //     if (!isFinite(obj)) {
-        //         return obj < 0 ? '-∞' : '∞';
-        //     }
-        //     if (!obj && 1 / obj < 0) {
-        //         // 0 and -0 are different things... sadly 0 === -0 but we can
-        //         // tell them apart by dropping them in a denominator since 0
-        //         // produces Infinity and -0 produces -Infinity
-        //         return '-0';
-        //     }
-        // }
-        //
-        // return JSON.stringify(obj);
     }
 
     static typeOf (v) {
@@ -949,7 +924,7 @@ Assert.Modifier = class {
             throw new Error(msg);
         }
 
-        return this.owner.entries[name];
+        return this.owner.registry[name];
     }
 };
 

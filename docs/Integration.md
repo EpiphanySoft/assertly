@@ -98,6 +98,10 @@ of the `Assert` (or derived) class.
 
 ### print
 
+The `print` method converts the object passed to it into a readable string. This
+method is used internally to print the actual and expected parameters in the
+`explain` method.
+
 ### report
 
 This method is called when an assertion is completed. The `Assert` instance is
