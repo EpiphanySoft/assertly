@@ -2429,7 +2429,7 @@ describe('Custom Assert', function () {
     let explodes;
 
     class CustomAssert extends Assert {
-        static report (assertion) {debugger;
+        static report (assertion) {
             reportLog.push(assertion);
             super.report(assertion);
         }
@@ -2453,6 +2453,35 @@ describe('Custom Assert', function () {
         }
     });
 
+    CustomAssert.register({
+        christmas: {
+            fn (value) {
+                let m = value.getMonth();
+                let d = value.getDate();
+
+                return m === 11 && d === 25;
+            },
+
+            explain (value) {
+                let y = value.getFullYear();
+                let x = +value;
+                let t = +new Date(y, 11, 25) - x;
+                let not = this.modifiers.not ? 'not ' : '';
+
+                if (t < 0) {
+                    t = +new Date(y+1, 11, 25) - x;
+                }
+
+                if (t) { // if (not Christmas)
+                    t = Math.round(t / (24 * 60 * 60 * 1000));
+                    return `Expected ${t} days before Christmas ${not}to be Christmas`;
+                }
+
+                return `Expected Christmas ${not}to be Christmas`;
+            }
+        }
+    });
+
     const expect = CustomAssert.expect.bind(CustomAssert);
 
     afterEach(function () {
@@ -2470,7 +2499,7 @@ describe('Custom Assert', function () {
         });
 
         it('should capture errors', function () {
-            try {debugger
+            try {
                 expect(0).to.be(1);
             }
             catch (e) {
@@ -2484,6 +2513,38 @@ describe('Custom Assert', function () {
     });
 
     describe('Assertions', function () {
+        it('should detect Christmas', function () {
+            expect(new Date(2016,11,25)).to.be.christmas();
+
+            let ok = false;
+
+            try {
+                expect(new Date(2016,11,25)).not.to.be.christmas();
+            }
+            catch (e) {
+                ok = true;
+                //debugger;
+            }
+
+            expect(ok).to.be(true);
+        });
+
+        it('should detect non-Christmas', function () {
+            expect(new Date(2016,8,25)).not.to.be.christmas();
+
+            let ok = false;
+
+            try {
+                expect(new Date(2016,8,25)).to.be.christmas();
+            }
+            catch (e) {
+                ok = true;
+                //debugger;
+            }
+
+            expect(ok).to.be(true);
+        });
+
         it('should track modifiers', function () {
             expect(0).to.randomly.explode();
 

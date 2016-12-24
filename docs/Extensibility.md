@@ -7,8 +7,8 @@ for derivation and customization.
 ## Registering Customizations
 
 All of the modifiers and assertions are incorporated by the static `register` method.
-This method accepts an object that describes the allowed modifiers and their sequence
-as well as the assertion functions.
+This method accepts an object (called the "registry") that describes the allowed
+modifiers and their sequence as well as the assertion functions.
 
 Consider this minimal form:
 
@@ -50,9 +50,63 @@ above enables these assertions:
     expect(fn).not.to.throw(type);
     expect(fn).to.not.throw(type);
 
+#### Explaining Assertions
+
+The default mechanism for generating explanatory text for an assert is acceptable in
+most cases. This is because it reads almost identically to the assertion in the code
+itself. There are times, however, explanations can be improved with a little logic.
+
+    Assert.register({
+        christmas: {
+            fn (value) {
+                return value.getMonth() === 11 && value.getDate() === 25;
+            },
+
+            explain (value) {
+                let y = value.getFullYear();
+                let x = +value;
+                let t = +new Date(y, 11, 25) - x;
+                let not = this.modifiers.not ? 'not ' : '';
+
+                if (t < 0) {
+                    t = +new Date(y+1, 11, 25) - x;
+                }
+
+                t = Math.round(t / (24 * 60 * 60 * 1000));
+
+                if (t) {
+                    return `Expected ${t} days before Christmas ${not}to be Christmas`;
+                }
+
+                return `Expected Christmas ${not}to be Christmas`;
+            }
+        }
+    });
+
+The parameters passed to `explain` are the same as those passed to the assertion `fn`,
+which are first the "actual" value (the one passed to `expect`) and then the values
+passed in the assertion call.
+
+The `explain` method can (as above) return the full explanation. Alternatively, it
+can adjust the properties that are normally concatenated. The following properties
+are stored on the `Assert` instance for this purpose by the `Assert.explain` class
+method:
+
+ - `actual` - A string with the printed (`Assert.print`) `value`.
+ - `assertions` - A String[] of the modifiers followed by the assertion.
+ - `expectation` - A string with the printed (`Assert.print`) `expected`.
+
+The default explanation consists of:
+
+    Expected ${actual} ${assertions.join(' ')} ${expectation}
+
+For example:
+
+    Expected 4 to be 2
+
 ### Modifiers
 
-Modifiers are added in the same way:
+Modifiers are added in basically the same way as assertions:
 
     Assert.register({
         'to.randomly': true,
@@ -70,32 +124,81 @@ allows `randomly` to follow the `to` modifier (by default it would belong at the
 of the dot-chain). The second key defines the `throw` assertion and it can now be
 used after `to` or after `randomly`.
 
+### Registry Keys
+
+As shown above, the keys of the registry object (the object passed to `register`) can
+contain some special syntactic forms.
+
+For a complete example:
+
+    foo,bar,zip.thing,alt,other.blerp,derp
+    \         / \   / \       / \        /
+     \_______/   \_/   \_____/   \______/
+      before    name   aliases    after
+
+The key is first split on `'.'` (or alternatively `'|'` or `'/'` for readability).
+For example:
+
+    foo,bar,zip|thing,alt,other|blerp,derp
+
+    // or
+
+    foo,bar,zip/thing,alt,other/blerp,derp
+
+If there is only one element, that element is the name and its possible alternate
+aliases.
+
+If there are two or more elements in the split, the first element is the **before**
+collection and the second is the name and aliases. The set of **before** values are
+those words that come _before_ the word being defined. As with 'to.randomly' above,
+the 'to' is a **before** for the word 'randomly'.
+
+Only if there are three parts in the split does the **after** set come into play.
+This set is the names that can come _after_ this name.
+
+All sets of names can be comma-delimited. When this is applied to the primary name,
+the second and subsequent names are considered aliases.
+
 ### Advanced Configuration
 
-The value of each property passed to `register` is often a simple value, but its full
-and normalized form is an object with the following properties:
+The value of each property in the registry object is often a simple value, but its
+full, normalized form is an object with the following properties:
 
  - `alias` - The array of alternate names (e.g. "a" and "an").
- - `after` - The array of names that this name comes after.
- - `before` - The array of names that this name comes before.
+ - `after` - The array of names that come _after_ this name.
+ - `before` - The array of names that come _before_ this name.
  - `fn` - The assertion `Function` that will return `true` for success.
  - `explain` - The `Function` that will return a string explaining the assertion.
 
-Rewriting the above in fully normal form:
+Rewriting the 'to.randomly' in normal form:
 
     Assert.register({
         randomly: {
-            after: ['to']
+            before: ['to']
         },
 
         throw: {
-            after: ['to', 'randomly'],
+            before: ['to', 'randomly'],
             fn (fn, type) {
                 if (this.modifiers.randomly) {
                     //... hmmm
                 }
                 //...
             }
+        }
+    });
+
+Rewriting the complete example:
+
+    foo,bar,zip|thing,alt,other|blerp,derp
+
+Would look like this:
+
+    Assert.register({
+        thing: {
+            alias: ['alt', 'other' ],
+            before: ['foo', 'bar', 'zip']
+            after: ['blerp', 'derp']
         }
     });
 
