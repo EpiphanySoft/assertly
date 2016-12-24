@@ -255,7 +255,7 @@ function masterSuite (A) {
                     expect(E).not.to.be.an(T);
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected TypeError("Boo") not to be an error`);
+                    expect(e.message).to.be(`Expected TypeError('Boo') not to be an error`);
                 }
             });
 
@@ -304,7 +304,7 @@ function masterSuite (A) {
                     expect(F).not.to.be.a(T);
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected Func not to be a function`);
+                    expect(e.message).to.be(`Expected [Function: Func] not to be a function`);
                 }
             });
 
@@ -516,7 +516,7 @@ function masterSuite (A) {
                     expect('a').not.to.be.a(T);
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected "a" not to be a string`);
+                    expect(e.message).to.be(`Expected 'a' not to be a string`);
                 }
             });
 
@@ -723,7 +723,7 @@ function masterSuite (A) {
                 try {
                     expect('hello').to.contain('xo');
                 } catch (e) {
-                    expect(e.message).to.contain(`Expected "hello" to contain "xo"`);
+                    expect(e.message).to.contain(`Expected 'hello' to contain 'xo'`);
                 }
             });
         });
@@ -799,7 +799,7 @@ function masterSuite (A) {
                     try {
                         expect([1,2,0]).to.not.contain(0);
                     } catch (e) {
-                        expect(e.message).to.contain(`Expected [1,2,0] to not contain 0`);
+                        expect(e.message).to.contain(`Expected [ 1, 2, 0 ] to not contain 0`);
                     }
                 });
             });
@@ -822,7 +822,7 @@ function masterSuite (A) {
                     try {
                         expect('hello').to.not.contain('he');
                     } catch (e) {
-                        expect(e.message).to.contain(`Expected "hello" to not contain "he"`);
+                        expect(e.message).to.contain(`Expected 'hello' to not contain 'he'`);
                     }
                 });
             });
@@ -940,7 +940,7 @@ function masterSuite (A) {
                 bar(1);
             }
             catch (e) {
-                expect(e.message).to.be(`Expected [1] to be empty`);
+                expect(e.message).to.be(`Expected [ 1 ] to be empty`);
             }
         });
 
@@ -951,7 +951,7 @@ function masterSuite (A) {
                 expect([0]).to.be.empty();
             }
             catch (e) {
-                expect(e.message).to.be(`Expected [0] to be empty`);
+                expect(e.message).to.be(`Expected [ 0 ] to be empty`);
             }
         });
 
@@ -962,7 +962,7 @@ function masterSuite (A) {
                 expect('x').not.to.be.empty();
             }
             catch (e) {
-                expect(e.message).to.be(`Expected "x" not to be empty`);
+                expect(e.message).to.be(`Expected 'x' not to be empty`);
             }
         });
     });
@@ -1071,14 +1071,14 @@ function masterSuite (A) {
                 expect(42).not.to.be.in([1, 2, 42]);
             }
             catch (e) {
-                expect(e.message).to.be(`Expected 42 not to be in [1,2,42]`);
+                expect(e.message).to.be(`Expected 42 not to be in [ 1, 2, 42 ]`);
             }
 
             try {
                 expect(427).to.not.be.in([1, 427, 42]);
             }
             catch (e) {
-                expect(e.message).to.be(`Expected 427 to not be in [1,427,42]`);
+                expect(e.message).to.be(`Expected 427 to not be in [ 1, 427, 42 ]`);
             }
         });
 
@@ -1091,7 +1091,7 @@ function masterSuite (A) {
                 expect('oba').not.to.be.in('foobar');
             }
             catch (e) {
-                expect(e.message).to.be(`Expected "oba" not to be in "foobar"`);
+                expect(e.message).to.be(`Expected 'oba' not to be in 'foobar'`);
             }
         });
 
@@ -1103,7 +1103,7 @@ function masterSuite (A) {
                 expect(0).to.be.in([1, 2, 42, '']);
             }
             catch (e) {
-                expect(e.message).to.be(`Expected 0 to be in [1,2,42,""]`);
+                expect(e.message).to.be(`Expected 0 to be in [ 1, 2, 42, '' ]`);
             }
         });
 
@@ -1114,7 +1114,7 @@ function masterSuite (A) {
                 expect('x').to.be.in('hello');
             }
             catch (e) {
-                expect(e.message).to.be(`Expected "x" to be in "hello"`);
+                expect(e.message).to.be(`Expected 'x' to be in 'hello'`);
             }
         });
     });
@@ -1161,7 +1161,7 @@ function masterSuite (A) {
                     expect(a).to.have.keys('a', 'x');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {"a":1} to have keys ["a","x"]`);
+                    expect(e.message).to.be(`Expected { a: 1 } to have keys [ 'a', 'x' ]`);
                 }
             });
 
@@ -1171,7 +1171,7 @@ function masterSuite (A) {
                         expect(a).not.to.have.key('a');
                     }
                     catch (e) {
-                        expect(e.message).to.be(`Expected {"a":1} not to have key "a"`);
+                        expect(e.message).to.be(`Expected { a: 1 } not to have key 'a'`);
                     }
                 });
 
@@ -1206,7 +1206,7 @@ function masterSuite (A) {
                     expect(b).to.only.have.key('c');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {"a":2,"b":3} to only have key "c"`);
+                    expect(e.message).to.be(`Expected { a: 2, b: 3 } to only have key 'c'`);
                 }
             });
 
@@ -1215,7 +1215,7 @@ function masterSuite (A) {
                     expect(b).to.only.have.key('a');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {"a":2,"b":3} to only have key "a"`);
+                    expect(e.message).to.be(`Expected { a: 2, b: 3 } to only have key 'a'`);
                 }
             });
 
@@ -1224,7 +1224,7 @@ function masterSuite (A) {
                     expect(xyz).to.only.have.keys('x', 'y');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {"x":2,"y":3,"z":4} to only have keys ["x","y"]`);
+                    expect(e.message).to.be(`Expected { x: 2, y: 3, z: 4 } to only have keys [ 'x', 'y' ]`);
                 }
             });
 
@@ -1234,7 +1234,7 @@ function masterSuite (A) {
                         expect(a).not.to.only.have.key('a');
                     }
                     catch (e) {
-                        expect(e.message).to.be(`Expected {"a":1} not to only have key "a"`);
+                        expect(e.message).to.be(`Expected { a: 1 } not to only have key 'a'`);
                     }
                 });
 
@@ -1259,7 +1259,7 @@ function masterSuite (A) {
                     expect(b).to.only.have.own.key('c');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {"a":2,"b":3} to only have own key "c"`);
+                    expect(e.message).to.be(`Expected { a: 2, b: 3 } to only have own key 'c'`);
                 }
             });
 
@@ -1268,7 +1268,7 @@ function masterSuite (A) {
                     expect(b).to.only.have.own.key('a');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {"a":2,"b":3} to only have own key "a"`);
+                    expect(e.message).to.be(`Expected { a: 2, b: 3 } to only have own key 'a'`);
                 }
             });
 
@@ -1277,7 +1277,7 @@ function masterSuite (A) {
                     expect(a2).to.only.have.own.key('a');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {} to only have own key "a"`);
+                    expect(e.message).to.be(`Expected {} to only have own key 'a'`);
                 }
             });
 
@@ -1286,7 +1286,7 @@ function masterSuite (A) {
                     expect(b2).to.only.have.own.keys('a', 'c');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {"c":4} to only have own keys ["a","c"]`);
+                    expect(e.message).to.be(`Expected { c: 4 } to only have own keys [ 'a', 'c' ]`);
                 }
             });
 
@@ -1331,7 +1331,7 @@ function masterSuite (A) {
                     expect(b).to.have.own.key('c');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {"a":2,"b":3} to have own key "c"`);
+                    expect(e.message).to.be(`Expected { a: 2, b: 3 } to have own key 'c'`);
                 }
             });
 
@@ -1340,7 +1340,7 @@ function masterSuite (A) {
                     expect(a2).to.have.own.key('a');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {} to have own key "a"`);
+                    expect(e.message).to.be(`Expected {} to have own key 'a'`);
                 }
             });
 
@@ -1349,7 +1349,7 @@ function masterSuite (A) {
                     expect(xyz).not.to.have.own.keys('x', 'y');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {"x":2,"y":3,"z":4} not to have own keys ["x","y"]`);
+                    expect(e.message).to.be(`Expected { x: 2, y: 3, z: 4 } not to have own keys [ 'x', 'y' ]`);
                 }
             });
 
@@ -1518,14 +1518,14 @@ function masterSuite (A) {
                     expect(a).not.to.have.property('a');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {"a":1} not to have property "a"`);
+                    expect(e.message).to.be(`Expected { a: 1 } not to have property 'a'`);
                 }
 
                 try {
                     expect(a).to.not.have.property('a');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {"a":1} to not have property "a"`);
+                    expect(e.message).to.be(`Expected { a: 1 } to not have property 'a'`);
                 }
             });
 
@@ -1542,14 +1542,14 @@ function masterSuite (A) {
                         expect(a).not.to.have.property('a', 1);
                     }
                     catch (e) {
-                        expect(e.message).to.be(`Expected {"a":1} not to have property "a" === 1`);
+                        expect(e.message).to.be(`Expected { a: 1 } not to have property 'a' === 1`);
                     }
 
                     try {
                         expect(a).to.not.have.property('a', 1);
                     }
                     catch (e) {
-                        expect(e.message).to.be(`Expected {"a":1} to not have property "a" === 1`);
+                        expect(e.message).to.be(`Expected { a: 1 } to not have property 'a' === 1`);
                     }
                 });
 
@@ -1567,7 +1567,7 @@ function masterSuite (A) {
                         expect(a).not.to.have.property('a');
                     }
                     catch (e) {
-                        expect(e.message).to.be(`Expected {"a":1} not to have property "a"`);
+                        expect(e.message).to.be(`Expected { a: 1 } not to have property 'a'`);
                     }
                 });
 
@@ -1626,7 +1626,7 @@ function masterSuite (A) {
                     expect(b).to.only.have.property('c');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {"a":2,"b":3} to only have property "c"`);
+                    expect(e.message).to.be(`Expected { a: 2, b: 3 } to only have property 'c'`);
                 }
             });
 
@@ -1635,7 +1635,7 @@ function masterSuite (A) {
                     expect(b).to.only.have.property('a');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {"a":2,"b":3} to only have property "a"`);
+                    expect(e.message).to.be(`Expected { a: 2, b: 3 } to only have property 'a'`);
                 }
             });
 
@@ -1645,7 +1645,7 @@ function masterSuite (A) {
                         expect(a).not.to.only.have.property('a');
                     }
                     catch (e) {
-                        expect(e.message).to.be(`Expected {"a":1} not to only have property "a"`);
+                        expect(e.message).to.be(`Expected { a: 1 } not to only have property 'a'`);
                     }
                 });
 
@@ -1703,7 +1703,7 @@ function masterSuite (A) {
                     expect(b).to.only.have.own.property('c');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {"a":2,"b":3} to only have own property "c"`);
+                    expect(e.message).to.be(`Expected { a: 2, b: 3 } to only have own property 'c'`);
                 }
             });
 
@@ -1712,7 +1712,7 @@ function masterSuite (A) {
                     expect(b).to.only.have.own.property('a');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {"a":2,"b":3} to only have own property "a"`);
+                    expect(e.message).to.be(`Expected { a: 2, b: 3 } to only have own property 'a'`);
                 }
             });
 
@@ -1721,7 +1721,7 @@ function masterSuite (A) {
                     expect(a2).to.only.have.own.property('a');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {} to only have own property "a"`);
+                    expect(e.message).to.be(`Expected {} to only have own property 'a'`);
                 }
             });
 
@@ -1810,7 +1810,7 @@ function masterSuite (A) {
                     expect(b).to.have.own.property('c');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {"a":2,"b":3} to have own property "c"`);
+                    expect(e.message).to.be(`Expected { a: 2, b: 3 } to have own property 'c'`);
                 }
             });
 
@@ -1819,7 +1819,7 @@ function masterSuite (A) {
                     expect(a2).to.have.own.property('a');
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected {} to have own property "a"`);
+                    expect(e.message).to.be(`Expected {} to have own property 'a'`);
                 }
             });
 
@@ -1888,7 +1888,7 @@ function masterSuite (A) {
                 expect([2, 3, 1]).not.to.be.same([2, 3, 1]);
             }
             catch (e) {
-                expect(e.message).to.be('Expected [2,3,1] not to be the same as [2,3,1]');
+                expect(e.message).to.be('Expected [ 2, 3, 1 ] not to be the same as [ 2, 3, 1 ]');
             }
         });
 
@@ -1936,7 +1936,7 @@ function masterSuite (A) {
                 expect(function foobar () {}).to.throw();
             }
             catch (e) {
-                expect(e.message).to.contain('Expected foobar to throw');
+                expect(e.message).to.contain('Expected [Function: foobar] to throw');
             }
         });
 
@@ -1948,7 +1948,7 @@ function masterSuite (A) {
                     }).to.throw('Foo');
                 }
                 catch (e) {
-                    expect(e.message).to.contain(`Expected fizzo to throw "Foo"`);
+                    expect(e.message).to.contain(`Expected [Function: fizzo] to throw 'Foo'`);
                 }
             });
 
@@ -1959,7 +1959,7 @@ function masterSuite (A) {
                     }).to.throw(/foo/i);
                 }
                 catch (e) {
-                    expect(e.message).to.contain('Expected bizzo to throw /foo/i');
+                    expect(e.message).to.contain('Expected [Function: bizzo] to throw /foo/i');
                 }
             });
 
@@ -1970,7 +1970,7 @@ function masterSuite (A) {
                     }).to.not.throw();
                 }
                 catch (e) {
-                    expect(e.message).to.contain('Expected foobar to not throw');
+                    expect(e.message).to.contain('Expected [Function: foobar] to not throw');
                 }
             });
 
@@ -1981,7 +1981,7 @@ function masterSuite (A) {
                     }).not.to.throw();
                 }
                 catch (e) {
-                    expect(e.message).to.contain('Expected foobar not to throw');
+                    expect(e.message).to.contain('Expected [Function: foobar] not to throw');
                 }
             });
         });
@@ -2020,7 +2020,7 @@ function masterSuite (A) {
                     expect('').to.be.truthy();
                 }
                 catch (e) {
-                    expect(e.message).to.be(`Expected "" to be truthy`);
+                    expect(e.message).to.be(`Expected '' to be truthy`);
                 }
             });
             it('should not match false', function () {
@@ -2276,7 +2276,7 @@ function masterSuite (A) {
                 let a = A.log[0];
 
                 expect(A.log.length).to.be(1);
-                expect(a.failed).to.be(`Expected {"a":1} to equal {"a":2}`);
+                expect(a.failed).to.be(`Expected { a: 1 } to equal { a: 2 }`);
                 expect(a.value).to.be(o);
                 expect(a.expected).to.be.same([v]);
             });
@@ -2341,7 +2341,7 @@ function masterSuite (A) {
                 let a = log[0];
 
                 expect(log.length).to.be(1);
-                expect(e.message).to.be(`Expected "xyz" to be "def"`);
+                expect(e.message).to.be(`Expected 'xyz' to be 'def'`);
 
                 // But the report should be in order:
                 expect(a.failed).to.be(e.message);

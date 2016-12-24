@@ -1,12 +1,16 @@
 'use strict';
 /*
+Lifted from https://github.com/nodejs/node/blob/master/lib/util.js (specifically, this
+https://github.com/nodejs/node/blob/4fb27d43f0aea39d6e29488ad57903a089ab0a7b/lib/util.js)
+
+// These pull in C++ code, so we simulate the API's we need:
 const uv = process.binding('uv');
 const Buffer = require('buffer').Buffer;
 const internalUtil = require('internal/util');
 const binding = process.binding('util');
 */
-const internalUtil = require('./node-sim').util;
-const binding = require('./node-sim').binding;
+const binding = require('./node-sim');
+const internalUtil = binding;
 
 const isError = internalUtil.isError;
 

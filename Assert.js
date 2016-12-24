@@ -1,6 +1,6 @@
 'use strict';
 
-const inspect = require('./inspect');
+const inspect = require('./inspect').inspect;
 
 const BE = ['be'];
 const ROOT = ['$'];
@@ -831,9 +831,21 @@ class Assert {
     }
 
     static print (obj, options) {
+        let t = this.typeOf(obj);
+
+        if (t === 'error') {
+            if (obj.message) {
+                return `${obj.name}(${this.print(obj.message)})`;
+            }
+            return `${obj.name}`;
+        }
+
+        if (t === 'arguments') {
+            obj = arraySlice.call(obj);
+        }
+
         return inspect(obj, options);
-        // let t = this.typeOf(obj);
-        //
+
         // if (t === 'arguments') {
         //     obj = arraySlice.call(obj);
         // }
@@ -891,8 +903,8 @@ class Assert {
     }
 } // Assert
 
-Assert._notArrayLikeRe = /function|string/;
-Assert.promiseTypesRe = /function|object/;
+Assert._notArrayLikeRe = /^(?:function|string)$/;
+Assert.promiseTypesRe = /^(?:function|object)$/;
 Assert.rangeRe = /^\s*([\[(])\s*(\d+),\s*(\d+)\s*([\])])\s*$/;
 Assert.tupleRe = /[\.|\/]/;
 
