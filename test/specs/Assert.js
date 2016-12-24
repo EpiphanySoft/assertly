@@ -1,6 +1,6 @@
 'use strict';
 
-/* global describe, it */
+/* global describe, it, afterEach, beforeEach */
 
 const Assert = require('../../Assert');
 
@@ -68,7 +68,7 @@ describe('isArrayLike', function () {
 });
 
 function masterSuite (A) {
-    const expect = A.expect;
+    const expect = A.expect.bind(A);
 
     describe('an', function () {
         const E = new TypeError('Boo');
@@ -359,8 +359,48 @@ function masterSuite (A) {
                     expect(e.message).to.be(`Expected 1 not to be a number`);
                 }
             });
-            it('should match zero', function () {
+            it('should match 0', function () {
                 expect(0).to.be.a(T);
+            });
+            it('should match -0', function () {
+                expect(-0).to.be.a(T);
+
+                try {
+                    expect(-0).not.to.be.a(T);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected -0 not to be a number`);
+                }
+            });
+            it('should match infinity', function () {
+                expect(Infinity).to.be.a(T);
+
+                try {
+                    expect(Infinity).not.to.be.a(T);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected ∞ not to be a number`);
+                }
+            });
+            it('should match negative infinity', function () {
+                expect(-Infinity).to.be.a(T);
+
+                try {
+                    expect(-Infinity).not.to.be.a(T);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected -∞ not to be a number`);
+                }
+            });
+            it('should match NaN', function () {
+                expect(NaN).to.be.a(T);
+
+                try {
+                    expect(NaN).not.to.be.a(T);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected NaN not to be a number`);
+                }
             });
 
             describe('not', function () {
@@ -2366,9 +2406,67 @@ function masterSuite (A) {
                 expect(a.failed.message).to.be('Zap!');
             });
         });
+
+        it('should force synchronous assertions to be asynchronous', function () {
+            expect(delay(20, 'Some text')).to.be('Some text').then(() => {
+                    //console.log('A');
+                });
+
+            return expect(2).to.be(2).then(() => {
+                    //console.log('B');
+                });
+        });
     });
 }
 
-describe('Assert', function () {
-    masterSuite(Assert);
+// describe('Assert', function () {
+//     masterSuite(Assert);
+// });
+
+describe('Custom Assert', function () {
+    const failureLog = [];
+    const reportLog = [];
+
+    class CustomAssert extends Assert {
+        static report (assertion) {debugger;
+            reportLog.push(assertion);
+            super.report(assertion);
+        }
+
+        static reportFailure (msg, assertion) {
+            failureLog.push(msg);
+            super.reportFailure(msg, assertion);
+        }
+    }
+
+    const expect = CustomAssert.expect.bind(CustomAssert);
+
+    afterEach(function () {
+        failureLog.length = reportLog.length = 0;
+    });
+
+    masterSuite(CustomAssert);
+
+    describe.only('Capturing logs', function () {
+        it('should create derived instances', function () {
+            expect(2).to.be(2);
+
+            expect(reportLog.length).to.be(1);
+            expect(reportLog[0]).to.be.a(CustomAssert);
+        });
+
+        it('should capture errors', function () {
+            try {debugger
+                expect(0).to.be(1);
+            }
+            catch (e) {
+                debugger
+                expect(reportLog.length).to.be(1);
+                expect(reportLog[0]).to.be.a(CustomAssert);
+
+                expect(failureLog.length).to.be(1);
+                expect(failureLog[0]).to.be('Expected 0 to be 1');
+            }
+        });
+    });
 });

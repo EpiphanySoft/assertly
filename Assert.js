@@ -12,6 +12,18 @@ const toStringMap = {};
 const toStringRe = /^\[object ([^\]]+)]$/;
 const useTypeOfRe = /booolean|number|string|undefined/;
 
+function toArray (value) {
+    if (!value) {
+        return null;
+    }
+
+    if (!Array.isArray(value)) {
+        value = [value];
+    }
+
+    return value;
+}
+
 /**
  * @class Assert
  */
@@ -297,10 +309,68 @@ class Assert {
         throw new Error(msg);
     }
 
-    static setup () {
+    static normalize (registry) {
+        let A = this;
+        let ret = {};
+
+        for (let name of Object.keys(registry)) {
+            let def = registry[name];
+            let t = typeof def;
+
+            if (t === 'function') {
+                def = {
+                    fn: def
+                };
+            }
+            else if (t === 'string' || Array.isArray(def)) {
+                def = {
+                    before: def  // to: 'be'   OR   'to.have': ['only', 'own']
+                };
+            }
+
+            let after  = toArray(def.after);
+            let before = toArray(def.before);
+
+            if (A.tupleRe.test(name)) {
+                // 'afters.name,alias.befores'
+                let tuples = name.split(A.tupleRe);
+                let a = tuples.shift();
+                name = tuples.shift();
+                let b = tuples[0];
+
+                b = b && b.split(',') || null;
+                a = a && a.split(',') || null;
+
+                before = before ? (b ? before.concat(b) : before) : b;
+                after  = after  ? (a ? after.concat(a)  : after)  : a;
+            }
+
+            if (!after) {
+                after = def.fn ? (name === 'be' ? TO : BE) : ROOT;
+            }
+            if (after.indexOf('to') > -1 && after.indexOf('not') < 0) {
+                after = ['not'].concat(after);
+            }
+
+            let names = name.split(',');
+            name = names.shift();
+
+            ret[name] = {
+                alias: names.length ? names : null,
+                after: after,
+                before: before,
+                fn: def.fn,
+                name: name
+            };
+        }
+
+        return ret;
+    }
+
+    static getDefaults () {
         const A = this;
 
-        A.register({
+        return {
             not: ['to'],
             to:  ['not'],
 
@@ -581,8 +651,12 @@ class Assert {
 
                 return hi === ']' ? actual <= max : actual < max;
             }
-        });
-    } // setup
+        };
+    } // getDefaults
+
+    static setup () {
+        this.register(this.getDefaults());
+    }
 
     static wrapAssertion (def) {
         return function (...expected) {
@@ -839,47 +913,19 @@ class Assert {
             }
             return `${obj.name}`;
         }
-
-        if (t === 'arguments') {
+        else if (t === 'arguments') {
             obj = arraySlice.call(obj);
+        }
+        else if (t === 'number') {
+            if (isNaN(obj)) {
+                return 'NaN';
+            }
+            if (!isFinite(obj)) {
+                return obj < 0 ? '-∞' : '∞';
+            }
         }
 
         return inspect(obj, options);
-
-        // if (t === 'arguments') {
-        //     obj = arraySlice.call(obj);
-        // }
-        // else if (t === 'function') {
-        //     return obj.$className || obj.name || 'anonymous-function';
-        // }
-        // else if (t === 'date') {
-        //     return obj.toISOString();
-        // }
-        // else if (t === 'error') {
-        //     if (obj.message) {
-        //         return `${obj.name}(${this.print(obj.message)})`;
-        //     }
-        //     return `${obj.name}`;
-        // }
-        // else if (t === 'regexp') {
-        //     return String(obj);
-        // }
-        // else if (t === 'number') {
-        //     if (isNaN(obj)) {
-        //         return 'NaN';
-        //     }
-        //     if (!isFinite(obj)) {
-        //         return obj < 0 ? '-∞' : '∞';
-        //     }
-        //     if (!obj && 1 / obj < 0) {
-        //         // 0 and -0 are different things... sadly 0 === -0 but we can
-        //         // tell them apart by dropping them in a denominator since 0
-        //         // produces Infinity and -0 produces -Infinity
-        //         return '-0';
-        //     }
-        // }
-        //
-        // return JSON.stringify(obj);
     }
 
     static typeOf (v) {
