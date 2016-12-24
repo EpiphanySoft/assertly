@@ -2419,13 +2419,14 @@ function masterSuite (A) {
     });
 }
 
-// describe('Assert', function () {
-//     masterSuite(Assert);
-// });
+describe('Assert', function () {
+    masterSuite(Assert);
+});
 
 describe('Custom Assert', function () {
     const failureLog = [];
     const reportLog = [];
+    let explodes;
 
     class CustomAssert extends Assert {
         static report (assertion) {debugger;
@@ -2439,15 +2440,28 @@ describe('Custom Assert', function () {
         }
     }
 
+    CustomAssert.setup();
+    CustomAssert.register({
+        'to,only/randomly': true,
+
+        'to,only,randomly/explode' () {
+            explodes = this.modifiers.randomly ? 'randomly' : 'always';
+            if (this.modifiers.only) {
+                explodes = 'only ' + explodes;
+            }
+            return true;
+        }
+    });
+
     const expect = CustomAssert.expect.bind(CustomAssert);
 
     afterEach(function () {
-        failureLog.length = reportLog.length = 0;
+        failureLog.length = reportLog.length = explodes = 0;
     });
 
     masterSuite(CustomAssert);
 
-    describe.only('Capturing logs', function () {
+    describe('Capturing logs', function () {
         it('should create derived instances', function () {
             expect(2).to.be(2);
 
@@ -2460,13 +2474,34 @@ describe('Custom Assert', function () {
                 expect(0).to.be(1);
             }
             catch (e) {
-                debugger
                 expect(reportLog.length).to.be(1);
                 expect(reportLog[0]).to.be.a(CustomAssert);
 
                 expect(failureLog.length).to.be(1);
                 expect(failureLog[0]).to.be('Expected 0 to be 1');
             }
+        });
+    });
+
+    describe('Assertions', function () {
+        it('should track modifiers', function () {
+            expect(0).to.randomly.explode();
+
+            expect(explodes).to.be('randomly');
+
+            expect(0).to.explode();
+
+            expect(explodes).to.be('always');
+        });
+
+        it('should track multiple modifiers', function () {
+            expect(0).to.only.randomly.explode();
+
+            expect(explodes).to.be('only randomly');
+
+            expect(0).to.only.explode();
+
+            expect(explodes).to.be('only always');
         });
     });
 });
