@@ -2,11 +2,6 @@
 
 const inspect = require('./inspect').inspect;
 
-const EMPTY = [];
-const BE = ['be'];
-const ROOT = ['$'];
-const TO = ['to'];
-
 const arraySlice = Array.prototype.slice;
 const toString = Object.prototype.toString;
 const toStringMap = {};
@@ -15,7 +10,7 @@ const useTypeOfRe = /booolean|number|string|undefined/;
 
 function toArray (value) {
     if (!value) {
-        return EMPTY;
+        return [];
     }
 
     if (!Array.isArray(value)) {
@@ -474,7 +469,7 @@ class Assert {
 
     static normalize (registry) {
         let A = this;
-        let ret = { $$: true };
+        let ret = {};
 
         for (let name of Object.keys(registry)) {
             let def = registry[name];
@@ -509,7 +504,7 @@ class Assert {
             }
 
             if (!after.length) {
-                after = def.fn ? (name === 'be' ? TO : BE) : ROOT;
+                after = [def.fn ? (name === 'be' ? 'to' : 'be') : '$'];
             }
             if (after.indexOf('to') > -1 && after.indexOf('not') < 0) {
                 after = ['not'].concat(after);
@@ -523,7 +518,7 @@ class Assert {
             }
 
             ret[name] = {
-                alias: names.length ? names : EMPTY,
+                alias: names.length ? names : [],
                 after: after,
                 before: before,
                 explain: def.explain || null,
@@ -538,11 +533,7 @@ class Assert {
     static register (name, def) {
         const A = this;
         const P = A.prototype;
-
-        let registry = (typeof name === 'string') ? { [name] : def } : name;
-
-        registry = registry.$$ ? registry : this.normalize(registry);
-        delete registry.$$;
+        const registry = A.normalize((typeof name === 'string') ? { [name] : def } : name);
 
         for (name in registry) {
             def = registry[name];
@@ -569,7 +560,7 @@ class Assert {
             }
         }
 
-        let names = Object.keys(A.entries);
+        let names = Object.keys(A.registry);
         for (let s of names) {
             if (s !== '$' && !Object.getOwnPropertyDescriptor(P, s)) {
                 A._addBit(P, s);
@@ -656,10 +647,6 @@ class Assert {
         const A = this;
         const entry = A._getEntry(modifier, false);
 
-        if (Object.getOwnPropertyDescriptor(target, modifier)) {
-            throw new Error(`Assertion method "${modifier}" already defined`);
-        }
-
         Object.defineProperty(target, modifier, {
             get () {
                 let bound = function (...args) {
@@ -724,11 +711,11 @@ class Assert {
         }
 
         let A = this;
-        let entries = A.hasOwnProperty('entries') ? A.entries : (A.entries = {});
-        let entry = entries[name];
+        let registry = A.hasOwnProperty('registry') ? A.registry : (A.registry = {});
+        let entry = registry[name];
 
         if (!entry && autoCreate !== false) {
-            entries[name] = entry = new A.Modifier(A, name, canonicalName);
+            registry[name] = entry = new A.Modifier(A, name, canonicalName);
         }
 
         return entry;
@@ -937,7 +924,7 @@ Assert.Modifier = class {
             throw new Error(msg);
         }
 
-        return this.owner.entries[name];
+        return this.owner.registry[name];
     }
 };
 

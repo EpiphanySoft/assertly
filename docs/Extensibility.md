@@ -58,21 +58,83 @@ Modifiers are added in the same way:
         'to.randomly': true,
 
         'to,randomly.throw' (fn, type) {
+            if (this.modifiers.randomly) {
+                //... hmmm
+            }
             //...
         }
     });
 
-The above add the (not very helpful) `randomly` modifier. The first key `to.randomly`
-allows `randomly` to follow the `to` modifier. The second key defines the `throw`
-assertion and it can now be used after `to` or after `randomly`.
+The above adds the (not very helpful) `randomly` modifier. The first key `to.randomly`
+allows `randomly` to follow the `to` modifier (by default it would belong at the start
+of the dot-chain). The second key defines the `throw` assertion and it can now be
+used after `to` or after `randomly`.
 
-### Sequence Control Using Keys
+### Advanced Configuration
 
-### Sequence Control Using `before` And `after`
+The value of each property passed to `register` is often a simple value, but its full
+and normalized form is an object with the following properties:
+
+ - `alias` - The array of alternate names (e.g. "a" and "an").
+ - `after` - The array of names that this name comes after.
+ - `before` - The array of names that this name comes before.
+ - `fn` - The assertion `Function` that will return `true` for success.
+ - `explain` - The `Function` that will return a string explaining the assertion.
+
+Rewriting the above in fully normal form:
+
+    Assert.register({
+        randomly: {
+            after: ['to']
+        },
+
+        throw: {
+            after: ['to', 'randomly'],
+            fn (fn, type) {
+                if (this.modifiers.randomly) {
+                    //... hmmm
+                }
+                //...
+            }
+        }
+    });
+
+## Adjusting The Defaults
+
+The above examples are overly simplistic since they replace the standard modifiers
+and assertions by only registering customizations.
+
+A more realistic approach:
+
+    let registry = Assert.getDefaults();
+
+    // registry looks like the above object
+
+    Assert.register(registry);
+
+This sequence is performed automatically when the first `Assert` instance is created,
+but only if no registrations have been made. An easy way to adjust the dot-chains and
+make additions or removals is to edit the object returned by `getDefaults`. The object
+returned by `getDefaults` is always fully normalized to simplify this task.
 
 ## Extending Assert
 
-The `Assert.setup` static method is called internally when the first `Assert` instance
-is created. This method looks like this:
+The `Assert` class can also be extended to make customizations.
 
-    this.register(this.getDefaults());
+    class MyAssert extends Assert {
+        static expect (value) {
+            return new MyAssert(value);
+        }
+
+        static getDefaults () {
+            let registry = super.getDefaults();
+
+            // hack away
+
+            return registry;
+        }
+    }
+
+This is similar to adjusting `Assert` itself, but obviously a bit safer if one is
+planning to combine test suites with those developed by others (though not a very
+common practice).
