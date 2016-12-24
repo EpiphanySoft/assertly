@@ -482,7 +482,7 @@ class Assert {
             }
             else if (t === 'string' || Array.isArray(def)) {
                 def = {
-                    before: def  // to: 'be'   OR   'to.have': ['only', 'own']
+                    after: def  // to: 'be'   OR   'to.have': ['only', 'own']
                 };
             }
 
@@ -492,22 +492,22 @@ class Assert {
             if (A.tupleRe.test(name)) {
                 // 'afters.name,alias.befores'
                 let tuples = name.split(A.tupleRe);
-                let a = tuples.shift();
+                let b = tuples.shift();
                 name = tuples.shift();
-                let b = tuples[0];
+                let a = tuples[0];
 
-                b = b && b.split(',');
                 a = a && a.split(',');
+                b = b && b.split(',');
 
-                before = b ? before.concat(b) : before;
-                after  = a ? after.concat(a)  : after;
+                after = a ? after.concat(a) : after;
+                before  = b ? before.concat(b)  : before;
             }
 
-            if (!after.length) {
-                after = [def.fn ? (name === 'be' ? 'to' : 'be') : '$'];
+            if (!before.length) {
+                before = [def.fn ? (name === 'be' ? 'to' : 'be') : '$'];
             }
-            if (after.indexOf('to') > -1 && after.indexOf('not') < 0) {
-                after = ['not'].concat(after);
+            if (before.indexOf('to') > -1 && before.indexOf('not') < 0) {
+                before = ['not'].concat(before);
             }
 
             let names = name.split(',');
@@ -543,7 +543,7 @@ class Assert {
 
             for (let s of names) {
                 let entry = A._getEntry(s, name);
-                entry.add(def.before);
+                entry.add(def.after);
 
                 if (fn) {
                     entry.fn = fn;
@@ -553,8 +553,8 @@ class Assert {
                     A._addBit(P, s, name);
                 }
 
-                for (let a of def.after) {
-                    entry = A._getEntry(a);
+                for (let b of def.before) {
+                    entry = A._getEntry(b);
                     entry.add(s);
                 }
             }
