@@ -311,8 +311,6 @@ methods and customize these behaviors.
 You can use [add-ons](./Add-ons.md) with such classes in the same way as `Assert`
 itself:
 
-    // Step 1 - Load the add-on module:
     const addon = require('my-assertly-addon');
 
-    // Step 2 - Register the add-on:
     MyAssert.register(addon.init);

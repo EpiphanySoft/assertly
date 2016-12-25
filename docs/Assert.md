@@ -85,22 +85,6 @@ creates a new `Assert` instance and passes along the same value and itself:
 
 The previous `Assert` instance is stored as `_previous` on the new instance.
 
-## Reporting
-
-Inside the assertion, the `Assert` instance is passed to a static method to report
-the result:
-
-    Assert.report(this);
-
-If the assertion fails, this method calls another static method:
-
-    Assert.reportFailure(this);
-
-It is this method that contains the `throw` statement.
-
-Because `Assert` is an ES6 class these static methods can be overridden in a derived
-class. This is most useful when [integrating](./Integration.md) with other modules.
-
 ## Custom Modifiers and Assertions
 
 All of the modifiers and assertions provided by `Assert` are dynamically added
