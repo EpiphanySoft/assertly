@@ -8,15 +8,20 @@ Returns a human-readable string form of the `object` (similar to JSON but nicer)
 
 Valid options are:
 
- - `showHidden` (`false`)
- - `depth` (2)
- - `colors` (`false`)
- - `customInspect` (`true`)
- - `showProxy` (`false`)
- - `maxArrayLength` (100)
- - `breakLength` (60)
+ - `showHidden` (`false`) If true, the object's non-enumerable symbols and properties will be included in the formatted result. Defaults to false.
+ - `depth` (2) Specifies the number of times to recurse while formatting the object. This is useful for inspecting large complicated objects. Defaults to 2. To make it recurse indefinitely pass null.
+ - `colors` (`false`) If true, the output will be styled with ANSI color codes. Defaults to false. Colors are customizable, see Customizing util.inspect colors.
+ - `customInspect` (`true`) If false, then custom inspect(depth, opts) functions exported on the object being inspected will not be called. Defaults to true.
+ - `showProxy` (`false`) If true, then objects and functions that are Proxy objects will be introspected to show their target and handler objects. Defaults to false.
+ - `maxArrayLength` (100) Specifies the maximum number of array and TypedArray elements to include when formatting. Defaults to 100. Set to null to show all array elements. Set to 0 or negative to show no array elements.
+ - `breakLength` (60) The length at which an object's keys are split across multiple lines. Set to Infinity to format an object as a single line. Defaults to 60 for legacy compatibility.
 
-This method is an extracted version of Node.js's `inspect` method.
+When running on Node.js, this method is assigned to the `util` module's version. For
+browsers, this method is an extracted version of Node.js's
+[inspect](https://nodejs.org/api/util.html#util_util_inspect_object_options) method.
+
+**Note:** At present `showProxy` is not supported in the browser because it relies on
+direct access to the JavaScript engine.
 
 ## isArrayLike
 

@@ -1,7 +1,7 @@
 'use strict';
 
-const inspect = require('./inspect').inspect;
-
+const isNode = typeof window === 'undefined';
+const inspect = require(isNode ? 'util' : './inspect').inspect;
 const arraySlice = Array.prototype.slice;
 const toString = Object.prototype.toString;
 
