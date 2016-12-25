@@ -197,7 +197,7 @@ class Assert {
                 },
                 explain (object, type) {
                     if (typeof type === 'string') {
-                        this.expectation = type;
+                        this.expectation = type; // removes the quotes on "type"
                     }
                 }
             },
@@ -216,7 +216,7 @@ class Assert {
                 explain (actual, expected, epsilon) {
                     epsilon = epsilon || 0.001;
 
-                    this.assertions.pop(); // remove "approximately"
+                    this.assertions.pop(); // remove "approx"
                     this.expectation = `${A.print(expected)} ± ${A.print(epsilon)}`;
                 }
             },

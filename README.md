@@ -10,7 +10,7 @@ Assertly was created to address these shortcomings in **expect.js**:
 
  - [Extensibility](docs/Extensibility.md)
  - [Integration](docs/Integration.md)
- - [Add-ons](docs/Add-ons.md}
+ - [Add-ons](docs/Add-ons.md)
  - [Promises](docs/Promises.md)
 
 ## Why Not Chai?
