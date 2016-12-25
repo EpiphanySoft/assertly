@@ -6,7 +6,7 @@ const $path = require('path');
 
 Assert.setup();
 
-let entries = Assert.entries;
+let entries = Assert.registry;
 let keys = Object.keys(entries);
 
 keys.sort();

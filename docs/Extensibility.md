@@ -1,8 +1,7 @@
 # Extensibility
 
 The [Assert](./Assert.md) class is primarily intended to be created as a worker object
-by the public `expect` method. The `Assert` class is also designed, however, to allow
-for derivation and customization.
+by the public `expect` method. The `Assert` class can also be extended or customized.
 
 ## Registering Customizations
 
@@ -19,6 +18,7 @@ Consider this minimal form:
         be (actual, expected) {
             // "actual" (arguments[0]) is the value passed to expect()
             // the rest of the arguments cme from the call to the assertion
+            // "this" is the Assert instance
 
             return actual === expected;
         }
@@ -49,6 +49,18 @@ above enables these assertions:
 
     expect(fn).not.to.throw(type);
     expect(fn).to.not.throw(type);
+
+The `this` pointer when an assertion is called in the `Assert` instance. The most
+likely property to use are the `_modifiers` which hold the pieces of the dot-chain
+used to arrive at the assertion (this includes the modifiers and the assertion method
+itself).
+
+While one can access `this._modifiers.not` in the assertion method, this is not
+recommended. This is because the truth result returned will be toggled based on this
+modifier and so is not needed in the truth test.
+
+When writing custom assertions, `Assert.Util` has some helpful [utility](./Utils.md)
+methods.
 
 #### Explaining Assertions
 
@@ -87,10 +99,30 @@ The parameters passed to `explain` are the same as those passed to the assertion
 which are first the "actual" value (the one passed to `expect`) and then the values
 passed in the assertion call.
 
+For example:
+
+    expect(x).to.be.foo(y, z);
+
+    // ...
+
+    {
+        fn (x, y, z) {
+            // truth test
+        },
+
+        explain (x, y, z) {
+            // explain the truth test
+        }
+    }
+
+The `this` pointer for an `explain` method is the `Assert` instance. The most likely
+property to use are the `_modifiers` which hold the pieces of the dot-chain
+used to arrive at the assertion (this includes the modifiers and the assertion method
+itself).
+
 The `explain` method can (as above) return the full explanation. Alternatively, it
 can adjust the properties that are normally concatenated. The following properties
-are stored on the `Assert` instance for this purpose by the `Assert.explain` class
-method:
+are stored on the `Assert` instance for this purpose:
 
  - `actual` - A string with the printed (`Assert.print`) `value`.
  - `assertions` - A String[] of the modifiers followed by the assertion.
@@ -269,3 +301,6 @@ The `Assert` class can also be extended to make customizations.
 This is similar to adjusting `Assert` itself, but obviously a bit safer if one is
 planning to combine test suites with those developed by others (though not a very
 common practice).
+
+As a derived class, it is also possible to implement the [Lifecycle](./Lifecycle.md)
+methods and customize these behaviors.

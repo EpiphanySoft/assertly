@@ -3,11 +3,12 @@
 /* global describe, it, afterEach, beforeEach */
 
 const Assert = require('../../Assert');
+const Util = Assert.Util;
 
 describe('isArrayLike', function () {
     const A = Assert;
     const expect = A.expect;
-    const isArrayLike = A.Util.isArrayLike;
+    const isArrayLike = Util.isArrayLike;
 
     describe('arrayish', function () {
         it('should report true for an array', function () {
@@ -65,6 +66,78 @@ describe('isArrayLike', function () {
         it('should report false for strings', function () {
             expect(isArrayLike('hello')).to.be(false);
         });
+    });
+});
+
+describe('typeOf', function () {
+    const A = Assert;
+    const expect = A.expect;
+    const typeOf = Util.typeOf;
+
+    it('should handle arguments', function () {
+        expect(typeOf(arguments)).to.be('arguments');
+    });
+
+    it('should handle arrays', function () {
+        expect(typeOf([])).to.be('array');
+    });
+
+    it('should handle booleans', function () {
+        expect(typeOf(false)).to.be('boolean');
+        expect(typeOf(true)).to.be('boolean');
+    });
+
+    it('should handle dates', function () {
+        expect(typeOf(new Date())).to.be('date');
+    });
+
+    it('should handle errors', function () {
+        expect(typeOf(new Error())).to.be('error');
+        expect(typeOf(new TypeError())).to.be('error');
+    });
+
+    it('should handle functions', function () {
+        let fn = function () {};
+
+        expect(typeOf(fn)).to.be('function');
+    });
+
+    it('should handle arrow functions', function () {
+        let fn = () => {};
+
+        expect(typeOf(fn)).to.be('function');
+    });
+
+    it('should handle infinite numbers', function () {
+        expect(typeOf(Infinity)).to.be('number');
+        expect(typeOf(-Infinity)).to.be('number');
+    });
+
+    it('should handle NaN', function () {
+        expect(typeOf(NaN)).to.be('number');
+    });
+
+    it('should handle numbers', function () {
+        expect(typeOf(0)).to.be('number');
+        expect(typeOf(-0)).to.be('number');
+        expect(typeOf(1)).to.be('number');
+    });
+
+    it('should handle null', function () {
+        expect(typeOf(null)).to.be('null');
+    });
+
+    it('should handle RegExp', function () {
+        expect(typeOf(/a/)).to.be('regexp');
+    });
+
+    it('should handle strings', function () {
+        expect(typeOf('')).to.be('string');
+        expect(typeOf('abc')).to.be('string');
+    });
+
+    it('should handle undefined', function () {
+        expect(typeOf(undefined)).to.be('undefined');
     });
 });
 
@@ -1043,6 +1116,77 @@ function masterSuite (A) {
                 expect([1, 2]).to.equal(arguments);
             }
             foo(1, 2);
+        });
+    });
+
+    describe('falsy', function () {
+        it('should match empty string', function () {
+            expect('').to.be.falsy();
+
+            try {
+                expect('').not.to.be.falsy();
+            }
+            catch (e) {
+                expect(e.message).to.be(`Expected '' not to be falsy`);
+            }
+
+            try {
+                expect('').to.not.be.falsy();
+            }
+            catch (e) {
+                expect(e.message).to.be(`Expected '' to not be falsy`);
+            }
+        });
+
+        it('should match false', function () {
+            expect(false).to.be.falsy();
+        });
+        it('should match NaN', function () {
+            expect(NaN).to.be.falsy();
+        });
+        it('should match null', function () {
+            expect(null).to.be.falsy();
+        });
+        it('should match undefined', function () {
+            expect(undefined).to.be.falsy();
+        });
+        it('should match 0', function () {
+            expect(0).to.be.falsy();
+        });
+        it('should match -0', function () {
+            expect(-0).to.be.falsy();
+
+            try {
+                expect(-0).to.not.be.falsy();
+            }
+            catch (e) {
+                expect(e.message).to.be(`Expected -0 to not be falsy`);
+            }
+        });
+
+        describe('not', function () {
+            it('should not match an array', function () {
+                expect([]).to.not.be.falsy();
+
+                try {
+                    expect([]).to.not.be.falsy();
+                }
+                catch (e) {
+                    expect(e.message).to.be('Expected [] to not be falsy');
+                }
+            });
+            it('should not match true', function () {
+                expect(true).not.to.be.falsy();
+            });
+            it('should not match a non-empty string', function () {
+                expect('abc').to.not.be.falsy();
+            });
+            it('should not match a non-zero number', function () {
+                expect(1).not.to.be.falsy();
+            });
+            it('should not match an object', function () {
+                expect({}).to.not.be.falsy();
+            });
         });
     });
 
@@ -2036,7 +2180,7 @@ function masterSuite (A) {
                 expect([]).to.not.be.truthy();
             }
             catch (e) {
-                expect(e.message).to.be('Expected [] to be falsy');
+                expect(e.message).to.be('Expected [] to not be truthy');
             }
         });
         it('should match true', function () {
@@ -2080,9 +2224,12 @@ function masterSuite (A) {
                 expect(undefined).not.to.be.truthy();
                 expect(undefined).to.not.be.truthy();
             });
-            it('should not match zero', function () {
+            it('should not match 0', function () {
                 expect(0).not.to.be.truthy();
                 expect(0).to.not.be.truthy();
+            });
+            it('should not match -0', function () {
+                expect(-0).not.to.be.truthy();
             });
         });
     });
@@ -2243,7 +2390,7 @@ function masterSuite (A) {
         });
 
         afterEach(function () {
-            expect(A._previous === null).to.be(true);
+            expect(A._current === null).to.be(true);
             A.log = null;
         });
 
@@ -2443,7 +2590,7 @@ describe('Custom Assert', function () {
 
     CustomAssert.setup();
     CustomAssert.register({
-        truthy: {
+        nan: {
             fn: function fn (actual, expected) {
                 let r = fn._super.call(this, actual, expected);
                 return r;
@@ -2458,8 +2605,9 @@ describe('Custom Assert', function () {
         'to,only/randomly': true,
 
         'to,only,randomly/explode' () {
-            explodes = this.modifiers.randomly ? 'randomly' : 'always';
-            if (this.modifiers.only) {
+            let modifiers = this._modifiers;
+            explodes = modifiers.randomly ? 'randomly' : 'always';
+            if (modifiers.only) {
                 explodes = 'only ' + explodes;
             }
             return true;
@@ -2479,7 +2627,7 @@ describe('Custom Assert', function () {
                 let y = value.getFullYear();
                 let x = +value;
                 let t = +new Date(y, 11, 25) - x;
-                let not = this.modifiers.not ? 'not ' : '';
+                let not = this._modifiers.not ? 'not ' : '';
 
                 if (t < 0) {
                     t = +new Date(y+1, 11, 25) - x;
@@ -2576,6 +2724,52 @@ describe('Custom Assert', function () {
             expect(0).to.only.explode();
 
             expect(explodes).to.be('only always');
+        });
+    });
+
+    describe('Forbidden names', function () {
+        it('should track all forbidden names', function () {
+            expect(Object.keys(CustomAssert.forbidden)).to.equal([
+                'actual',
+                'assertion',
+                'assertions',
+                'before',
+                'begin',
+                'constructor',
+                'expectation',
+                'expected',
+                'explain',
+                'failed',
+                'failure',
+                'finish',
+                'get',
+                'report',
+                'value'
+            ]);
+        });
+
+        it('should prevent registering forbidden names', function () {
+            expect(() => {
+                CustomAssert.register({
+                    before (x) {}
+                });
+            }).to.throw(`Cannot redefine "before"`);
+        });
+
+        it('should prevent registering invalid method', function () {
+            expect(() => {
+                CustomAssert.register({
+                    _before (x) {}
+                });
+            }).to.throw(`Cannot register invalid name "_before"`);
+        });
+
+        it('should prevent registering invalid property', function () {
+            expect(() => {
+                CustomAssert.register({
+                    'to._foo': true
+                });
+            }).to.throw(`Cannot register invalid name "_foo"`);
         });
     });
 });

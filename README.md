@@ -6,11 +6,23 @@ almost the same interface. Some additional inspiration for assertions came from 
 [Chai Assert](http://chaijs.com/api/assert/) and [Chai BDD](http://chaijs.com/api/bdd/)
 API's as well.
 
-There are some additional goals, however, that led to this library:
+Assertly was created to address these shortcomings in **expect.js**:
 
  - [Extensibility](docs/Extensibility.md)
  - [Integration](docs/Integration.md)
+ - [Add-ons](docs/Add-ons.md}
  - [Promises](docs/Promises.md)
+
+## Why Not Chai?
+
+Chai certainly has most of the above covered, but the somewhat common (and troubling)
+practice of using "dangling getters" is something I think should be avoided. While
+their use is not essential, it is, as mentioned, common practice. For example:
+
+    expect(x).to.be.null;  // dangling getter
+
+IDE's and linters **rightly** warn that an expression like the above "has no side-effects"
+or "does nothing".
 
 # API
 
@@ -133,6 +145,22 @@ Objects must have all the same keys and arrays must have exactly the same number
 elements.
 
 
+### falsy
+
+ - to[.not].be.falsy
+
+The `falsy` assertion ensures that the `actual` value is "false-like". In other
+words, that it would fail an `if` test.
+
+For example:
+
+    expect(x).to.be.falsy();
+
+The above is equivalent to:
+
+    expect(!x).to.be(true);
+
+
 ### greaterThan (aka: "above", "gt")
 
  - to[.not].be.greaterThan
@@ -187,6 +215,8 @@ The above statements are equivalent to these:
 
  - to[.not].only.have.own.key
  - to[.not].only.have.key
+ - to[.not].only.own.key
+ - to[.not].only.key
  - to[.not].have.own.key
  - to[.not].have.only.own.key
  - to[.not].have.only.key
@@ -229,7 +259,7 @@ Of course these can be combined:
 
     b.b = 2;
 
-    expect(b).to.have.only.own.key('a');
+    expect(b).to.have.only.own.key('b');
 
 This assertion succeeds because, while "b" inherits the "a" property, "b" is the
 only "own" property (as defined by `hasOwnProperty`).
@@ -317,6 +347,8 @@ The above is equivalent to:
 
  - to[.not].only.have.own.property
  - to[.not].only.have.property
+ - to[.not].only.own.property
+ - to[.not].only.property
  - to[.not].have.own.property
  - to[.not].have.only.own.property
  - to[.not].have.only.property
@@ -347,11 +379,11 @@ that while `equal` uses the `==` operator (and hence allows for type conversions
 
 This means that for non-arrays and non-objects, `same` is equivalent to `be`.
 
-    expect(1).to.equal('1');  // fails since 1 !== '1'
+    expect(1).to.be.same('1');  // fails since 1 !== '1'
 
-    expect(1).to.equal(1);   // succeeds just like "to.be(1)"
+    expect(1).to.be.same(1);   // succeeds just like "to.be(1)"
 
-For object and arrays, `equal` compares corresponding properties and elements with the
+For object and arrays, `same` compares corresponding properties and elements with the
 same logic. In other words, the following passes for `equal` and fails for `same``:
 
     let a = {

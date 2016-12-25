@@ -14,13 +14,15 @@ class Assert {
         return new A(value);
     }
 
-    constructor (value) {
+    constructor (value, previous) {
         let me = this;
 
-        me.modifiers = {};
+        me._modifiers = {};
         me.value = value;
 
+        me._previous = previous || null;
         me._state = me._getEntry('$', false);
+
         if (!me._state) {
             me.constructor.setup();
             me._state = me._getEntry('$');
@@ -34,7 +36,7 @@ class Assert {
         if (expected) {
             let result = !me._def.fn.call(me, me.value, ...expected);
 
-            me.failed = me.modifiers.not ? !result : result;
+            me.failed = me._modifiers.not ? !result : result;
         }
     }
 
@@ -46,7 +48,7 @@ class Assert {
         let me = this;
         let A = me.constructor;
         let async = me._async;
-        let previous = A._previous;
+        let previous = A._current;
 
         if (previous && !async) {
             me._async = previous._async.then(() => {
@@ -54,33 +56,33 @@ class Assert {
                 return me._async; // this is reassigned below
             },
             e => {
-                if (A._previous === me) {
+                if (A._current === me) {
                     // If this is the end of the line of assertions, clean things up
-                    A._previous = null;
+                    A._current = null;
                 }
 
                 throw e;
             });
 
             // This assert was made after some other async asserts, so get in line...
-            A._previous = me;
+            A._current = me;
         }
         else if (async || Util.isPromise(me.value) || Util.isPromise(...expected)) {
             me._async = A.Promise.all(expected.concat(me.value)).then(values => {
                 me.expected = values;
                 me.value = values.pop();
 
-                if (A._previous === me) {
+                if (A._current === me) {
                     // If this is the end of the line of assertions, clean things up
-                    A._previous = null;
+                    A._current = null;
                 }
 
                 me.assertion();
                 me.report();
             },
             e => {
-                if (A._previous === me) {
-                    A._previous = null;
+                if (A._current === me) {
+                    A._current = null;
                 }
 
                 me.failure(e);
@@ -89,7 +91,7 @@ class Assert {
 
             if (!async) {
                 // This is the first async assert, so start the line with it...
-                A._previous = me;
+                A._current = me;
             }
         }
         else {
@@ -113,7 +115,7 @@ class Assert {
         me.actual = A.print(me.value);
         me.expectation = me.expectation || (n ? A.print(n === 1 ? exp[0] : exp) : '');
 
-        let mods = Object.keys(me.modifiers);
+        let mods = Object.keys(me._modifiers);
 
         me.assertions = mods;
 
@@ -135,7 +137,7 @@ class Assert {
         let async = me._async;
         let A = me.constructor;
         let conjunction = {
-            and: new A(me.value)
+            and: new A(me.value, me)
         };
 
         if (async) {
@@ -145,7 +147,7 @@ class Assert {
         return conjunction;
     }
 
-    prop (name) {
+    get (name) {
         let v = this.value;
 
         v = v ? v[name] : undefined;
@@ -258,6 +260,10 @@ class Assert {
                 return Util.isEqual(actual, expected);
             },
 
+            'falsy' (actual) {
+                return !actual;
+            },
+
             'greaterThan,gt,above' (actual, expected) {
                 return actual > expected;
             },
@@ -272,8 +278,8 @@ class Assert {
 
             'have,own,only/key,keys' (actual, ...expected) {
                 let ok = true;
-                let only = this.modifiers.only;
-                let own = this.modifiers.own;
+                let only = this._modifiers.only;
+                let own = this._modifiers.own;
                 let keyMap = only && {};
 
                 expected.forEach(key => {
@@ -334,10 +340,10 @@ class Assert {
 
             'have,only,own|property': {
                 fn (object, property, value) {
-                    let only = this.modifiers.only;
+                    let only = this._modifiers.only;
                     //TODO deep properties "foo.bar.baz"
 
-                    if (this.modifiers.own) {
+                    if (this._modifiers.own) {
                         if (!object.hasOwnProperty(property)) {
                             return false;
                         }
@@ -406,22 +412,8 @@ class Assert {
                 return ok;
             },
 
-            'truthy,ok': {
-                fn (actual) {
-                    return !!actual;
-                },
-                explain () {
-                    let assertions = this.assertions;
-                    let not = this.modifiers.not;
-
-                    assertions.pop(); // remove "truthy"
-
-                    if (not) {
-                        assertions.splice(assertions.indexOf('not'), 1);
-                    }
-
-                    this.expectation = not ? 'falsy' : 'truthy';
-                }
+            'truthy,ok' (actual) {
+                return !!actual;
             },
 
             within (actual, min, max, constraint) {
@@ -453,7 +445,6 @@ class Assert {
     } // getDefaults
 
     static normalize (registry) {
-        let A = this;
         let ret = {};
 
         for (let name of Object.keys(registry)) {
@@ -518,7 +509,18 @@ class Assert {
     static register (name, def) {
         const A = this;
         const P = A.prototype;
-        const registry = A.normalize((typeof name === 'string') ? { [name] : def } : name);
+        const t = typeof name;
+
+        if (t === 'string') {
+            name = {
+                [name]: def
+            };
+        }
+        else if (t === 'function') {
+            name = name.call(A, A, Util);
+        }
+
+        const registry = A.normalize(name);
 
         for (name in registry) {
             def = registry[name];
@@ -631,7 +633,7 @@ class Assert {
     // Private
 
     /**
-     * This method accepts a modifier (such as `'not'`) and updates the `modifiers`
+     * This method accepts a modifier (such as `'not'`) and updates the `_modifiers`
      * map accordingly. This method will throw an `Error` if modifier cannot be used
      * in the current state.
      * @param {String} modifier
@@ -642,7 +644,7 @@ class Assert {
 
         this._state = state = state.get(modifier);
 
-        this.modifiers[state.name] = true;
+        this._modifiers[state.name] = true;
     }
 
     _getEntry (name, autoCreate) {
@@ -651,7 +653,7 @@ class Assert {
 
     static _addBit (target, name, canonicalName) {
         if (Object.getOwnPropertyDescriptor(target, name)) {
-            throw new Error(`Expectation modifier "${name}" already defined`);
+            throw new Error(`Modifier "${name}" already defined`);
         }
 
         canonicalName = canonicalName || name;
@@ -734,12 +736,42 @@ class Assert {
             autoCreate = canonicalName;
             canonicalName = null;
         }
+        if (name !== '$' && !Util.validNameRe.test(name)) {
+            throw new Error(`Cannot register invalid name "${name}"`);
+        }
 
         let A = this;
-        let registry = A.hasOwnProperty('registry') ? A.registry : (A.registry = {});
+
+        if (!A.hasOwnProperty('registry')) {
+            A.registry = {};
+            A.forbidden = {};
+
+            let names = [];
+
+            for (let C = A; ; C = Object.getPrototypeOf(C)) {
+                names.push(...Object.getOwnPropertyNames(C.prototype));
+
+                if (C === Assert) {
+                    break;
+                }
+            }
+
+            names.sort();
+            for (let key of names) {
+                if (Util.validNameRe.test(key)) {
+                    A.forbidden[key] = true;  // all keys (even inherited ones)
+                }
+            }
+        }
+
+        let registry = A.registry;
         let entry = registry[name];
 
         if (!entry && autoCreate !== false) {
+            if (A.forbidden[name]) {
+                throw new Error(`Cannot redefine "${name}"`);
+            }
+
             registry[name] = entry = new A.Modifier(A, name, canonicalName);
         }
 
@@ -792,11 +824,20 @@ Assert.Modifier = class {
     }
 };
 
-// TODO make forbidden {} to prevent instance method replacement
 Assert.Promise = (typeof Promise !== 'undefined') && Promise.resolve && Promise;
 
+// This prevents shape changes but also is used to generate the list of forbidden
+// names:
 Object.assign(Assert.prototype, {
-    _async: null
+    _async: null,
+    _def: null,
+
+    actual: null,
+    assertions: null,
+    expectation: null,
+    expected: null,
+    failed: null,
+    value: null
 });
 
 const Util = Assert.Util = {
@@ -807,6 +848,8 @@ const Util = Assert.Util = {
     rangeRe: /^\s*([\[(])\s*(\d+),\s*(\d+)\s*([\])])\s*$/,
 
     tupleRe: /[\.|\/]/,
+
+    validNameRe: /^[a-z][a-z0-9_]*$/i,
 
     inspect: inspect,
 
@@ -923,11 +966,19 @@ const Util = Assert.Util = {
     },
 
     toArray (value) {
-        if (!value) {
+        if (value == null) {
             return [];
         }
 
         if (!Array.isArray(value)) {
+            if (Util.isArrayLike(value)) {
+                let ret = [];
+                for (let i = value.length; i--; ) {
+                    ret[i] = value[i];
+                }
+                return ret;
+            }
+
             value = [value];
         }
 
