@@ -8,13 +8,13 @@ Returns a human-readable string form of the `object` (similar to JSON but nicer)
 
 Valid options are:
 
- - `showHidden` (`false`) If true, the object's non-enumerable symbols and properties will be included in the formatted result. Defaults to false.
- - `depth` (2) Specifies the number of times to recurse while formatting the object. This is useful for inspecting large complicated objects. Defaults to 2. To make it recurse indefinitely pass null.
- - `colors` (`false`) If true, the output will be styled with ANSI color codes. Defaults to false. Colors are customizable, see Customizing util.inspect colors.
- - `customInspect` (`true`) If false, then custom inspect(depth, opts) functions exported on the object being inspected will not be called. Defaults to true.
- - `showProxy` (`false`) If true, then objects and functions that are Proxy objects will be introspected to show their target and handler objects. Defaults to false.
- - `maxArrayLength` (100) Specifies the maximum number of array and TypedArray elements to include when formatting. Defaults to 100. Set to null to show all array elements. Set to 0 or negative to show no array elements.
- - `breakLength` (60) The length at which an object's keys are split across multiple lines. Set to Infinity to format an object as a single line. Defaults to 60 for legacy compatibility.
+ - `showHidden` (`false`) If true, the object's non-enumerable symbols and properties will be included in the formatted result.
+ - `depth` (2) Specifies the number of times to recurse while formatting the object. This is useful for inspecting large complicated objects. To make it recurse indefinitely pass null.
+ - `colors` (`false`) If true, the output will be styled with ANSI color codes. Colors are customizable, see Customizing util.inspect colors.
+ - `customInspect` (`true`) If false, then custom inspect(depth, opts) functions exported on the object being inspected will not be called.
+ - `showProxy` (`false`) If true, then objects and functions that are Proxy objects will be introspected to show their target and handler objects.
+ - `maxArrayLength` (100) Specifies the maximum number of array and TypedArray elements to include when formatting. Set to null to show all array elements. Set to 0 or negative to show no array elements.
+ - `breakLength` (60) The length at which an object's keys are split across multiple lines. Set to Infinity to format an object as a single line.
 
 When running on Node.js, this method is assigned to the `util` module's version. For
 browsers, this method is an extracted version of Node.js's
@@ -83,7 +83,7 @@ caches them) such as these:
  - regexp
  - null
 
-More specificly, if the string returned by `Object.prototype.toString` matches
+More specifically, if the string returned by `Object.prototype.toString` matches
 the typical `"[object Foo]"` format, the "Foo" is extracted and `toLowerCase()` is
 applied for the result. Otherwise, the text from `Object.prototype.toString` is
 returned.

@@ -8,14 +8,14 @@ API's as well.
 
 Assertly was created to address these shortcomings in **expect.js**:
 
+ - [Add-ons](docs/Add-ons.md)
  - [Extensibility](docs/Extensibility.md)
  - [Integration](docs/Integration.md)
- - [Add-ons](docs/Add-ons.md)
  - [Promises](docs/Promises.md)
 
 ## Why Not Chai?
 
-Chai certainly has most of the above covered, but the somewhat common (and troubling)
+Chai pretty much has the above covered, but the somewhat common (and troubling)
 practice of using "dangling getters" is something I think should be avoided. While
 their use is not essential, it is, as mentioned, common practice. For example:
 
@@ -26,7 +26,20 @@ or "does nothing".
 
 # API
 
+The Assertly API is based on BDD-style expectations. For example:
+
+    expect(x).to.be(2);
+
+Where "x" is the "actual" value and 2 is the "expected" value. All things begin with
+the call to the `expect` method which returns an `Assert` instance.
+
+This instance has properties (like `to`) that modify the conditions of the expectation
+(called "modifiers") and methods (like `be`) that test these conditions (called
+"assertions").
+
 ## Modifiers
+
+Following are the modifiers provided by Assertly itself.
 
 ### not
 
@@ -45,7 +58,7 @@ All inherited properties are ignored when `own` is specified.
 
 ## Assertions
 
-Following are the assertion methods and their common aliases ("aka" = "also known as").
+Following are the assertion methods and their aliases ("aka" = "also known as").
 
 ### a (aka: "an")
 

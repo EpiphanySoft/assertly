@@ -34,9 +34,14 @@ class Assert {
         let expected = me.expected;
 
         if (expected) {
-            let result = !me._def.fn.call(me, me.value, ...expected);
+            try {
+                let result = !me._def.fn.call(me, me.value, ...expected);
 
-            me.failed = me._modifiers.not ? !result : result;
+                me.failed = me._modifiers.not ? !result : result;
+            }
+            catch (e) {
+                me.failed = e;
+            }
         }
     }
 
@@ -511,16 +516,12 @@ class Assert {
         const P = A.prototype;
         const t = typeof name;
 
-        if (t === 'string') {
-            name = {
-                [name]: def
-            };
-        }
-        else if (t === 'function') {
-            name = name.call(A, A, Util);
+        if (t === 'function') {
+            name.call(A, A, Util);
+            return;
         }
 
-        const registry = A.normalize(name);
+        const registry = A.normalize((t === 'string') ? { [name]: def } : name);
 
         for (name in registry) {
             def = registry[name];

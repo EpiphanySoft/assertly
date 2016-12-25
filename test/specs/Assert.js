@@ -762,6 +762,12 @@ function masterSuite (A) {
                 expect(e.message).to.be(`Expected 2.0011 to not be 2 ± 0.1`);
             }
         });
+
+        it('should reject non-numbers', function () {
+            expect(() => {
+                expect('x').to.be.approx(2);
+            }).to.throw(`Expected 'x' to be a number`);
+        });
     });
 
     describe('be', function () {
