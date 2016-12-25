@@ -77,7 +77,13 @@ Or combined using `and`:
 
 This is handled by the assertion method returning a helper object that only provides
 the `and` method (as well as a `then` method when using promises). The `and` method
-creates a new `Assert` instance and passes along the same value.
+creates a new `Assert` instance and passes along the same value and itself:
+
+    return {
+        and: new Assert(this.value, this)
+    };
+
+The previous `Assert` instance is stored as `_previous` on the new instance.
 
 ## Reporting
 

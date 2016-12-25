@@ -17,9 +17,9 @@ class Assert {
     constructor (value, previous) {
         let me = this;
 
-        me._modifiers = {};
         me.value = value;
 
+        me._modifiers = {};
         me._previous = previous || null;
         me._state = me._getEntry('$', false);
 
