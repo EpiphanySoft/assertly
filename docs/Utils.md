@@ -39,10 +39,11 @@ the values are both arrays or objects, their contents are compared. In other wor
 when `strict` is `true` this method does not compare object references but rather
 contents.
 
-Objects and arrays must have the properties that match the same `isEqual` criteria.
-
 Objects are considered equal if they have the same prototype and keys (regardless
-of order).
+of order) and values for each key passes the same `isEqual` test.
+
+Arrays are considered equal if they have the same number of elements and those
+elements pass the same `isEqual` test.
 
 # isPromise
 

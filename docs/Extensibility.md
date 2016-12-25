@@ -51,7 +51,7 @@ above enables these assertions:
     expect(fn).to.not.throw(type);
 
 The `this` pointer when an assertion is called in the `Assert` instance. The most
-likely property to use are the `_modifiers` which hold the pieces of the dot-chain
+likely property to use is the `_modifiers` object which hold the pieces of the dot-chain
 used to arrive at the assertion (this includes the modifiers and the assertion method
 itself).
 
@@ -78,7 +78,7 @@ itself. There are times, however, explanations can be improved with a little log
                 let y = value.getFullYear();
                 let x = +value;
                 let t = +new Date(y, 11, 25) - x;
-                let not = this.modifiers.not ? 'not ' : '';
+                let not = this._modifiers.not ? 'not ' : '';
 
                 if (t < 0) {
                     t = +new Date(y+1, 11, 25) - x;
@@ -105,20 +105,20 @@ For example:
 
     // ...
 
-    {
-        fn (x, y, z) {
-            // truth test
-        },
+    Assert.register({
+        foo: {
+            fn (x, y, z) {
+                // truth test
+            },
 
-        explain (x, y, z) {
-            // explain the truth test
+            explain (x, y, z) {
+                // explain the truth test
+            }
         }
-    }
+    });
 
-The `this` pointer for an `explain` method is the `Assert` instance. The most likely
-property to use are the `_modifiers` which hold the pieces of the dot-chain
-used to arrive at the assertion (this includes the modifiers and the assertion method
-itself).
+The `this` pointer for an `explain` method is the `Assert` instance. Again, the most
+likely property to use is `_modifiers`.
 
 The `explain` method can (as above) return the full explanation. Alternatively, it
 can adjust the properties that are normally concatenated. The following properties
@@ -255,15 +255,16 @@ returned by `getDefaults` is always fully normalized to simplify this task.
 ### Replacing Assertions
 
 When an assertion is already registered, calling `register` again will replace it.
-The original assertion function and is `explain` method are preserved on the new
+The original assertion function and its `explain` method are preserved on the new
 functions.
 
 For example:
 
     Assert.setup(); // initialize with defaults
 
+    // Take over nan assertion (which has an explain)
     Assert.register({
-        truthy: {
+        nan: {
             fn: function fn (actual, expected) {
                 let r = fn._super.call(this, actual, expected);
                 return r;
@@ -304,3 +305,14 @@ common practice).
 
 As a derived class, it is also possible to implement the [Lifecycle](./Lifecycle.md)
 methods and customize these behaviors.
+
+### Add-ons
+
+You can use [add-ons](./Add-ons.md) with such classes in the same way as `Assert`
+itself:
+
+    // Step 1 - Load the add-on module:
+    const addon = require('my-assertly-addon');
+
+    // Step 2 - Register the add-on:
+    MyAssert.register(addon.init);

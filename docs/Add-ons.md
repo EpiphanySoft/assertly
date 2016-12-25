@@ -4,7 +4,7 @@ An add-on is a module that exports an initializer function that (when called) us
 the [extensibility](./Extensibility.md) features of Assertly to provide its
 customizations.
 
-Using an add-on takes steps:
+Using an add-on looks like this:
 
     // Step 0 - Load up assertly
     const Assert = require('assertly');

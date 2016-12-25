@@ -19,7 +19,8 @@ assertion method is called. When that happens, the rest of the life-cycle is run
 
 The `before` method is called first when the assertion method is reached. It is given
 the "definition" object that defines the assertion. This is stored as `_def` on the
-`Assert` instance.
+`Assert` instance. This object is the normalized form from the registry object passed
+to `register`.
 
 ## begin
 
@@ -31,14 +32,14 @@ to that assertion's completion. If the "actual" value (given to the constructor)
 the "expected" array have promises, `begin` uses `Assert.Promise.all()` to resolve
 them and calls `begin` again with the resolved values.
 
-In the end, `begin` stores the array it is given as the `expected` property on the
+Once resolved, `begin` stores the array it is given as the `expected` property on the
 `Assert` instance.
 
 ## assertion
 
-This method is called to invoke the actual assertion logic (`this.def.fn()`) and
+This method is called to invoke the actual assertion logic (`this._def.fn()`) and
 pass the actual and expected values. If the `not` modifier is present, the result
-is inverted.
+is negated.
 
 This method will set the `failed` property (possibly to `false`).
 
@@ -49,7 +50,8 @@ by `begin`.
 
 This method is called to generate a string to explain an assertion. It is only
 called (by default) when an assertion fails. It is called by `report` before the
-instance is passed to the `Assert.report()` static method (more below).
+instance is passed to the `Assert.report()` static method. See
+[Integration](./Integration.md).
 
 In the act of generating the explanation, several other properties are set:
 

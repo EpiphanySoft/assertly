@@ -42,7 +42,7 @@ the rest of the dot-chain runs against it. First are the two "modifiers" (`to` a
 `not`) and then the "assertion" (`be`).
 
 Each piece of the dot-chain (`to`, `not` and `be`) are first processed as a property
-getter and are tracked in a `modifiers` object.
+getter and are tracked in a `_modifiers` object.
 
 Note: Due to this use of property getters means **assertly** cannot support IE8 even
 if transpiled.
@@ -51,15 +51,15 @@ Breaking down the above:
 
     let a = expect(x);  // same as "a = new Assert(x)"
 
-    a.to;       // sets "a.modifiers.to = true" and returns "a"
-    a.not;      // sets "a.modifiers.not = true" and returns "a"
-    a.be(2);    // sets "a.modifiers.be = true" and calls "a.be()"
+    a.to;       // sets "a._modifiers.to = true" and returns "a"
+    a.not;      // sets "a._modifiers.not = true" and returns "a"
+    a.be(2);    // sets "a._modifiers.be = true" and calls "a.be()"
 
 So in the end we have this:
 
-    a.modifiers = { to: true, not: true, be: true };
+    a._modifiers = { to: true, not: true, be: true };
 
-The assertion is also collected in the `modifiers` object because the property getter
+The assertion is also collected in the `_modifiers` object because the property getter
 cannot know if `a.be` will be invoked or use as a step in a deeper dot-chain:
 
     expect(x).to.not.be.within(5, 10);
@@ -98,6 +98,6 @@ class. This is most useful when [integrating](./Integration.md) with other modul
 ## Custom Modifiers and Assertions
 
 All of the modifiers and assertions provided by `Assert` are dynamically added
-by the `setup()` method using the `register()` method.
+using the `register()` method.
 
 For more on these use cases, see [Extensibility](./Extensibility.md).
