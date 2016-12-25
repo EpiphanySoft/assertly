@@ -228,8 +228,6 @@ The above statements are equivalent to these:
 
  - to[.not].only.have.own.key
  - to[.not].only.have.key
- - to[.not].only.own.key
- - to[.not].only.key
  - to[.not].have.own.key
  - to[.not].have.only.own.key
  - to[.not].have.only.key
@@ -280,7 +278,6 @@ only "own" property (as defined by `hasOwnProperty`).
 
 ### length
 
- - to[.not].only.have.length
  - to[.not].have.length
 
 This assertion checks that the `length` property is a certain value.
@@ -360,8 +357,6 @@ The above is equivalent to:
 
  - to[.not].only.have.own.property
  - to[.not].only.have.property
- - to[.not].only.own.property
- - to[.not].only.property
  - to[.not].have.own.property
  - to[.not].have.only.own.property
  - to[.not].have.only.property
