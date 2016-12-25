@@ -220,6 +220,34 @@ but only if no registrations have been made. An easy way to adjust the dot-chain
 make additions or removals is to edit the object returned by `getDefaults`. The object
 returned by `getDefaults` is always fully normalized to simplify this task.
 
+### Replacing Assertions
+
+When an assertion is already registered, calling `register` again will replace it.
+The original assertion function and is `explain` method are preserved on the new
+functions.
+
+For example:
+
+    Assert.setup(); // initialize with defaults
+
+    Assert.register({
+        truthy: {
+            fn: function fn (actual, expected) {
+                let r = fn._super.call(this, actual, expected);
+                return r;
+            },
+
+            explain: function fn (actual, expected) {
+                let r = fn._super.call(this, actual, expected);
+                return r;
+            }
+        }
+    });
+
+The `_super` property is stored on the function objects to form a chain. The odd
+syntax of declaring a named method is needed only when access to these replaced
+functions is desired.
+
 ## Extending Assert
 
 The `Assert` class can also be extended to make customizations.

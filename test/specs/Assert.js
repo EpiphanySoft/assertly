@@ -7,62 +7,63 @@ const Assert = require('../../Assert');
 describe('isArrayLike', function () {
     const A = Assert;
     const expect = A.expect;
+    const isArrayLike = A.Util.isArrayLike;
 
     describe('arrayish', function () {
         it('should report true for an array', function () {
-            expect(A.isArrayLike([])).to.be(true);
+            expect(isArrayLike([])).to.be(true);
         });
 
         it('should report true for an arguments', function () {
             function foo () {
-                expect(A.isArrayLike(arguments)).to.be(true);
+                expect(isArrayLike(arguments)).to.be(true);
             }
             foo();
         });
 
         it('should report true for string objects', function () {
-            expect(A.isArrayLike(new String('hello'))).to.be(true);
+            expect(isArrayLike(new String('hello'))).to.be(true);
         });
     });
 
     describe('not arrays', function () {
         it('should report false for booleans', function () {
-            expect(A.isArrayLike(true)).to.be(false);
+            expect(isArrayLike(true)).to.be(false);
         });
 
         it('should report false for boolean objects', function () {
-            expect(A.isArrayLike(new Boolean(true))).to.be(false);
+            expect(isArrayLike(new Boolean(true))).to.be(false);
         });
 
         it('should report false for dates', function () {
-            expect(A.isArrayLike(new Date())).to.be(false);
+            expect(isArrayLike(new Date())).to.be(false);
         });
 
         it('should report false for numbers', function () {
-            expect(A.isArrayLike(42)).to.be(false);
+            expect(isArrayLike(42)).to.be(false);
         });
 
         it('should report false for number objects', function () {
-            expect(A.isArrayLike(new Number(42))).to.be(false);
+            expect(isArrayLike(new Number(42))).to.be(false);
         });
 
         it('should report false for regex', function () {
-            expect(A.isArrayLike(/foo/)).to.be(false);
+            expect(isArrayLike(/foo/)).to.be(false);
         });
 
         it('should report false for strings', function () {
-            expect(A.isArrayLike('hello')).to.be(false);
+            expect(isArrayLike('hello')).to.be(false);
         });
 
         it('should report false for functions', function () {
             function fn () {
             }
 
-            expect(A.isArrayLike(fn)).to.be(false);
+            expect(isArrayLike(fn)).to.be(false);
         });
 
         it('should report false for strings', function () {
-            expect(A.isArrayLike('hello')).to.be(false);
+            expect(isArrayLike('hello')).to.be(false);
         });
     });
 });
@@ -2442,6 +2443,18 @@ describe('Custom Assert', function () {
 
     CustomAssert.setup();
     CustomAssert.register({
+        truthy: {
+            fn: function fn (actual, expected) {
+                let r = fn._super.call(this, actual, expected);
+                return r;
+            },
+
+            explain: function fn (actual, expected) {
+                let r = fn._super.call(this, actual, expected);
+                return r;
+            }
+        },
+
         'to,only/randomly': true,
 
         'to,only,randomly/explode' () {

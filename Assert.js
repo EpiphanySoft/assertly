@@ -4,21 +4,6 @@ const inspect = require('./inspect').inspect;
 
 const arraySlice = Array.prototype.slice;
 const toString = Object.prototype.toString;
-const toStringMap = {};
-const toStringRe = /^\[object ([^\]]+)]$/;
-const useTypeOfRe = /booolean|number|string|undefined/;
-
-function toArray (value) {
-    if (!value) {
-        return [];
-    }
-
-    if (!Array.isArray(value)) {
-        value = [value];
-    }
-
-    return value;
-}
 
 /**
  * @class Assert
@@ -33,12 +18,12 @@ class Assert {
         let me = this;
 
         me.modifiers = {};
-        me.state = me._getEntry('$', false);
         me.value = value;
 
-        if (!me.state) {
+        me._state = me._getEntry('$', false);
+        if (!me._state) {
             me.constructor.setup();
-            me.state = me._getEntry('$');
+            me._state = me._getEntry('$');
         }
     }
 
@@ -47,26 +32,26 @@ class Assert {
         let expected = me.expected;
 
         if (expected) {
-            let result = !me.def.fn.call(me, me.value, ...expected);
+            let result = !me._def.fn.call(me, me.value, ...expected);
 
             me.failed = me.modifiers.not ? !result : result;
         }
     }
 
     before (def) {
-        this.def = def;
+        this._def = def;
     }
 
     begin (expected) {
         let me = this;
         let A = me.constructor;
-        let async = me.async;
+        let async = me._async;
         let previous = A._previous;
 
         if (previous && !async) {
-            me.async = previous.async.then(() => {
+            me._async = previous._async.then(() => {
                 me.begin(expected);
-                return me.async; // this is reassigned below
+                return me._async; // this is reassigned below
             },
             e => {
                 if (A._previous === me) {
@@ -80,8 +65,8 @@ class Assert {
             // This assert was made after some other async asserts, so get in line...
             A._previous = me;
         }
-        else if (async || A._isPromise(me.value) || A._isPromise(...expected)) {
-            me.async = A.Promise.all(expected.concat(me.value)).then(values => {
+        else if (async || Util.isPromise(me.value) || Util.isPromise(...expected)) {
+            me._async = A.Promise.all(expected.concat(me.value)).then(values => {
                 me.expected = values;
                 me.value = values.pop();
 
@@ -118,7 +103,7 @@ class Assert {
 
     explain () {
         let me = this;
-        let def = me.def;
+        let def = me._def;
         let fn = def.explain;
         let exp = me.expected;
         let n = exp.length;
@@ -147,7 +132,7 @@ class Assert {
 
     finish () {
         let me = this;
-        let async = me.async;
+        let async = me._async;
         let A = me.constructor;
         let conjunction = {
             and: new A(me.value)
@@ -193,14 +178,14 @@ class Assert {
 
             'a,an': {
                 fn (actual, expected) {
-                    let te = A.typeOf(expected);
+                    let te = Util.typeOf(expected);
                     let re = te === 'regexp';
 
                     if (!re && te !== 'string') {
                         return actual instanceof expected;
                     }
 
-                    let t = A.typeOf(actual);
+                    let t = Util.typeOf(actual);
 
                     if (re) {
                         return expected.test(t); // ex expect(2).to.be.a(/number|string/);
@@ -253,7 +238,7 @@ class Assert {
                 if (!ret) {
                     t = typeof actual;
 
-                    if (t === 'string' || A.isArrayLike(actual)) {
+                    if (t === 'string' || Util.isArrayLike(actual)) {
                         ret = !actual.length;
                     }
                     else if (t === 'object') {
@@ -270,7 +255,7 @@ class Assert {
             },
 
             'to.equal' (actual, expected) {
-                return A.isEqual(actual, expected);
+                return Util.isEqual(actual, expected);
             },
 
             'greaterThan,gt,above' (actual, expected) {
@@ -390,7 +375,7 @@ class Assert {
 
             same: {
                 fn (actual, expected) {
-                    return A.isEqual(actual, expected, true);
+                    return Util.isEqual(actual, expected, true);
                 },
                 explain () {
                     let assertions = this.assertions;
@@ -447,7 +432,7 @@ class Assert {
                     hi = constraint[1];
                 }
                 else if (typeof min === 'string') {
-                    let m = this.constructor.rangeRe.exec(min);
+                    let m = Util.rangeRe.exec(min);
                     lo = m[1];
                     min = parseFloat(m[2]);
                     max = parseFloat(m[3]);
@@ -486,12 +471,12 @@ class Assert {
                 };
             }
 
-            let after  = toArray(def.after);
-            let before = toArray(def.before);
+            let after  = Util.toArray(def.after);
+            let before = Util.toArray(def.before);
 
-            if (A.tupleRe.test(name)) {
+            if (Util.tupleRe.test(name)) {
                 // 'afters.name,alias.befores'
-                let tuples = name.split(A.tupleRe);
+                let tuples = name.split(Util.tupleRe);
                 let b = tuples.shift();
                 name = tuples.shift();
                 let a = tuples[0];
@@ -546,6 +531,16 @@ class Assert {
                 entry.add(def.after);
 
                 if (fn) {
+                    let was = entry.def;
+
+                    if (was) {
+                        def.fn._super = was.fn;
+                        if (def.explain) {
+                            def.explain._super = was.explain || null;
+                        }
+                    }
+
+                    entry.def = def;
                     entry.fn = fn;
                     A._addFn(P, s, fn);
                 }
@@ -566,6 +561,30 @@ class Assert {
                 A._addBit(P, s);
             }
         }
+    }
+
+    static print (obj, options) {
+        let t = Util.typeOf(obj);
+
+        if (t === 'error') {
+            if (obj.message) {
+                return `${obj.name}(${this.print(obj.message)})`;
+            }
+            return `${obj.name}`;
+        }
+        else if (t === 'arguments') {
+            obj = arraySlice.call(obj);
+        }
+        else if (t === 'number') {
+            if (isNaN(obj)) {
+                return 'NaN';
+            }
+            if (!isFinite(obj)) {
+                return obj < 0 ? '-∞' : '∞';
+            }
+        }
+
+        return Util.inspect(obj, options);
     }
 
     static report (assertion) {
@@ -592,7 +611,7 @@ class Assert {
     }
 
     static wrapAssertion (def) {
-        return function (...expected) {
+        let wrap = function (...expected) {
             let me = this;
 
             me.before(def);
@@ -602,6 +621,10 @@ class Assert {
 
             return me.finish();
         };
+
+        wrap.def = def;
+
+        return wrap;
     }
 
     //-----------------------------------------------------------------------
@@ -615,9 +638,9 @@ class Assert {
      * @private
      */
     _applyModifier (modifier) {
-        let state = this.state;
+        let state = this._state;
 
-        this.state = state = state.get(modifier);
+        this._state = state = state.get(modifier);
 
         this.modifiers[state.name] = true;
     }
@@ -648,6 +671,8 @@ class Assert {
         const entry = A._getEntry(modifier, false);
 
         Object.defineProperty(target, modifier, {
+            configurable: true,
+
             get () {
                 let bound = function (...args) {
                     return fn.apply(bound.instance, args);
@@ -720,9 +745,73 @@ class Assert {
 
         return entry;
     }
+} // Assert
 
-    static isArrayLike (v) {
-        if (!v || this._notArrayLikeRe.test(typeof v)) {
+Assert.Modifier = class {
+    constructor (owner, name, canonicalName) {
+        this.all = [];
+        this.map = {};
+        this.name = name;
+        this.owner = owner;
+        this.canonicalName = canonicalName || name;
+
+        this.alias = this.canonicalName !== name;
+    }
+
+    add (name) {
+        if (!name) {
+            return;
+        }
+
+        let map = this.map;
+        let all = this.all;
+        let names = (typeof name === 'string') ? [name] : name;
+
+        for (let s of names) {
+            if (!map[s]) {
+                map[s] = true;
+                all.push(s);
+            }
+        }
+    }
+
+    get (name) {
+        if (!this.map[name]) {
+            let msg = `Expectation cannot use "${name}" `;
+
+            if (this.name === '$') {
+                msg += 'immediately';
+            } else {
+                msg += `after "${this.name}"`;
+            }
+
+            throw new Error(msg);
+        }
+
+        return this.owner.registry[name];
+    }
+};
+
+// TODO make forbidden {} to prevent instance method replacement
+Assert.Promise = (typeof Promise !== 'undefined') && Promise.resolve && Promise;
+
+Object.assign(Assert.prototype, {
+    _async: null
+});
+
+const Util = Assert.Util = {
+    notArrayLikeRe: /^(?:function|string)$/,
+
+    promiseTypesRe: /^(?:function|object)$/,
+
+    rangeRe: /^\s*([\[(])\s*(\d+),\s*(\d+)\s*([\])])\s*$/,
+
+    tupleRe: /[\.|\/]/,
+
+    inspect: inspect,
+
+    isArrayLike (v) {
+        if (!v || Util.notArrayLikeRe.test(typeof v)) {
             return false;
         }
 
@@ -734,9 +823,9 @@ class Assert {
         }
 
         return false;
-    }
+    },
 
-    static isEqual (o1, o2, strict) {
+    isEqual (o1, o2, strict) {
         if (o1 === o2) {
             return true;
         }
@@ -760,8 +849,8 @@ class Assert {
             return true;
         }
 
-        let t1 = this.typeOf(o1);
-        let t2 = this.typeOf(o2);
+        let t1 = Util.typeOf(o1);
+        let t2 = Util.typeOf(o2);
 
         if (t1 === t2) {
             if (t1 === 'date') {
@@ -815,123 +904,62 @@ class Assert {
 
         for (i = 0; i < n; ++i) {
             k = keys1[i];
-            if (!this.isEqual(o1[k], o2[k], strict)) {
+            if (!Util.isEqual(o1[k], o2[k], strict)) {
                 return false;
             }
         }
 
         return true;
-    }
+    },
 
-    static _isPromise (...obj) {
+    isPromise (...obj) {
         for (let o of obj) {
-            if (o && this.promiseTypesRe.test(typeof o) && typeof o.then === 'function') {
+            if (o && Util.promiseTypesRe.test(typeof o) && typeof o.then === 'function') {
                 return true;
             }
         }
 
         return false;
-    }
+    },
 
-    static print (obj, options) {
-        let t = this.typeOf(obj);
-
-        if (t === 'error') {
-            if (obj.message) {
-                return `${obj.name}(${this.print(obj.message)})`;
-            }
-            return `${obj.name}`;
-        }
-        else if (t === 'arguments') {
-            obj = arraySlice.call(obj);
-        }
-        else if (t === 'number') {
-            if (isNaN(obj)) {
-                return 'NaN';
-            }
-            if (!isFinite(obj)) {
-                return obj < 0 ? '-∞' : '∞';
-            }
+    toArray (value) {
+        if (!value) {
+            return [];
         }
 
-        return inspect(obj, options);
-    }
+        if (!Array.isArray(value)) {
+            value = [value];
+        }
 
-    static typeOf (v) {
+        return value;
+    },
+
+    typeOf (v) {
         if (v === null) {
             return 'null';
         }
 
+        let cache = Util._typeOf.cache;
         let t = typeof v;
 
-        if (!useTypeOfRe.test(t)) {
+        if (!Util._typeOf.useTypeOfRe.test(t)) {
             let s = toString.call(v);
 
-            if (!(t = toStringMap[s])) {
-                let m = toStringRe.exec(s);
+            if (!(t = cache[s])) {
+                let m = Util._typeOf.toStringRe.exec(s);
 
-                toStringMap[s] = t = m ? m[1].toLowerCase() : s;
+                cache[s] = t = m ? m[1].toLowerCase() : s;
             }
         }
 
         return t;
-    }
-} // Assert
+    },
 
-Assert._notArrayLikeRe = /^(?:function|string)$/;
-Assert.promiseTypesRe = /^(?:function|object)$/;
-Assert.rangeRe = /^\s*([\[(])\s*(\d+),\s*(\d+)\s*([\])])\s*$/;
-Assert.tupleRe = /[\.|\/]/;
-
-Assert.Modifier = class {
-    constructor (owner, name, canonicalName) {
-        this.all = [];
-        this.map = {};
-        this.name = name;
-        this.owner = owner;
-        this.canonicalName = canonicalName || name;
-
-        this.alias = this.canonicalName !== name;
-    }
-
-    add (name) {
-        if (!name) {
-            return;
-        }
-
-        let map = this.map;
-        let all = this.all;
-        let names = (typeof name === 'string') ? [name] : name;
-
-        for (let s of names) {
-            if (!map[s]) {
-                map[s] = true;
-                all.push(s);
-            }
-        }
-    }
-
-    get (name) {
-        if (!this.map[name]) {
-            let msg = `Expectation cannot use "${name}" `;
-
-            if (this.name === '$') {
-                msg += 'immediately';
-            } else {
-                msg += `after "${this.name}"`;
-            }
-
-            throw new Error(msg);
-        }
-
-        return this.owner.registry[name];
+    _typeOf: {
+        cache: {},
+        toStringRe: /^\[object ([^\]]+)]$/,
+        useTypeOfRe: /booolean|number|string|undefined/
     }
 };
-
-Assert.Promise = (typeof Promise !== 'undefined') && Promise.resolve && Promise;
-
-Object.assign(Assert.prototype, {
-    async: null
-});
 
 module.exports = Assert;
