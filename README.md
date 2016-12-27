@@ -37,6 +37,44 @@ This instance has properties (like `to`) that modify the conditions of the expec
 (called "modifiers") and methods (like `be`) that test these conditions (called
 "assertions").
 
+## Assertions
+
+An assertion is a method that is called to perform a test for truth. The most common
+assertion is `be`:
+
+    expect(x).to.be(y);  // compares x === y
+
+Assertions can also be used as modifiers. Such usage, however, does not evaluate
+them for truthfulness. For example:
+
+    expect(x).to.be.above(2);
+
+In this case, `above` is the assertion and `be` simply acts as a modifier.
+
+Following are the supported assertions and their aliases ("aka" = "also known as").
+
+ - [`a`](docs/a.md) (aka: "an")
+ - [`approx`](docs/approx.md) (aka: "approximately")
+ - [`be`](docs/be.md)
+ - [`contain`](docs/contain.md)
+ - [`empty`](docs/empty.md)
+ - [`equal`](docs/equal.md)
+ - [`falsy`](docs/falsy.md)
+ - [`greaterThan`](docs/greaterThan.md) (aka: "above", "gt")
+ - [`greaterThanOrEqual`](docs/greaterThanOrEqual.md) (aka: "atLeast", "ge", "gte")
+ - [`in`](docs/in.md)
+ - [`key`](docs/key.md) (aka: "keys")
+ - [`length`](docs/length.md)
+ - [`lessThan`](docs/lessThan.md) (aka: "below", "lt")
+ - [`lessThanOrEqual`](docs/lessThanOrEqual.md) (aka: "atMost", "le", "lte")
+ - [`match`](docs/match.md)
+ - [`nan`](docs/nan.md) (aka: "NaN")
+ - [`property`](docs/property.md)
+ - [`same`](docs/same.md)
+ - [`throw`](docs/throw.md)
+ - [`truthy`](docs/truthy.md) (aka: "ok")
+ - [`within`](docs/within.md)
+
 ## Modifiers
 
 Modifiers are simply words that decorate assertions. Their presence typically alters
@@ -77,44 +115,6 @@ all of the enumerable properties.
 ### to
 
 Serves only to aid readability.
-
-## Assertions
-
-An assertion is a method that is called to perform a test for truth. The most common
-assertion is `be`:
-
-    expect(x).to.be(y);  // compares x === y
-
-Assertions can also be used as modifiers. Such usage, however, does not evaluate
-them for truthfulness. For example:
-
-    expect(x).to.be.above(2);
-
-In this case, `above` is the assertion and `be` simply acts as a modifier.
-
-Following are the supported assertions and their aliases ("aka" = "also known as").
-
- - [`a`](docs/a.md) (aka: "an")
- - [`approx`](docs/approx.md) (aka: "approximately")
- - [`be`](docs/be.md)
- - [`contain`](docs/contain.md)
- - [`empty`](docs/empty.md)
- - [`equal`](docs/equal.md)
- - [`falsy`](docs/falsy.md)
- - [`greaterThan`](docs/greaterThan.md) (aka: "above", "gt")
- - [`greaterThanOrEqual`](docs/greaterThanOrEqual.md) (aka: "atLeast", "ge", "gte")
- - [`in`](docs/in.md)
- - [`key`](docs/key.md) (aka: "keys")
- - [`length`](docs/length.md)
- - [`lessThan`](docs/lessThan.md) (aka: "below", "lt")
- - [`lessThanOrEqual`](docs/lessThanOrEqual.md) (aka: "atMost", "le", "lte")
- - [`match`](docs/match.md)
- - [`nan`](docs/nan.md) (aka: "NaN")
- - [`property`](docs/property.md)
- - [`same`](docs/same.md)
- - [`throw`](docs/throw.md)
- - [`truthy`](docs/truthy.md) (aka: "ok")
- - [`within`](docs/within.md)
 
 ## Methods
 
