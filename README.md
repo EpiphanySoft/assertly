@@ -39,7 +39,16 @@ This instance has properties (like `to`) that modify the conditions of the expec
 
 ## Modifiers
 
-Following are the modifiers provided by Assertly itself.
+Modifiers are simply words that decorate assertions. Their presence typically alters
+the evaluation of assertions but they can sometimes just serve as grammatical aids to
+make the code readable.
+
+There is no required order to modifiers. The following are equivalent:
+
+    expect(x).to.not.be(2);
+    expect(x).not.to.be(2);
+
+Below are the modifiers provided by Assertly itself.
 
 ### not
 
@@ -47,20 +56,41 @@ The `not` modifier simply negates the result of the test. This is somewhat diffe
 then [expect.js](https://github.com/Automattic/expect.js) in some cases, but pure
 negation seems much more intuitive.
 
-### only / own
+### only
 
-These modifiers apply to `keys` and `property` assertions to restrict what is allowed
+This modifier applies to `keys` and `property` assertions to restrict what is allowed
 to match the criteria. The `only` modifier restricts the assertion such that it will
 fail if other keys or properties are present.
 
-The `own` modifier restricts consideration to "own properties" (as in `hasOwnProperty()`).
+### own
+
+The `own` modifier also applies to `keys` and `property` and restricts consideration
+to "own properties" (as in `hasOwnProperty()`).
+
 All inherited properties are ignored when `own` is specified.
 
 ### flatly
 
-Used with `equal`
+Used with `equal` and `same` to flatten the prototype chains of objects and compare
+all of the enumerable properties.
+
+### to
+
+Serves only to aid readability.
 
 ## Assertions
+
+An assertion is a method that is called to perform a test for truth. The most common
+assertion is `be`:
+
+    expect(x).to.be(y);  // compares x === y
+
+Assertions can also be used as modifiers. Such usage, however, does not evaluate
+them for truthfulness. For example:
+
+    expect(x).to.be.above(2);
+
+In this case, `above` is the assertion and `be` simply acts as a modifier.
 
 Following are the supported assertions and their aliases ("aka" = "also known as").
 
@@ -87,5 +117,10 @@ Following are the supported assertions and their aliases ("aka" = "also known as
  - [`within`](docs/within.md)
 
 ## Methods
+
+Asserts can also provide methods. These methods look syntactically like assertions
+but do not evaluate truth claims. Instead they perform some more general operation.
+
+Assertly provides these methods:
 
  - [`get`](docs/get.md)

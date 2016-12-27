@@ -7,7 +7,7 @@ by the public `expect` method. The `Assert` class can also be extended or custom
 
 All of the modifiers and assertions are incorporated by the static `register` method.
 This method accepts an object (called the "registry") that describes the allowed
-modifiers and their sequence as well as the assertion functions.
+modifiers, assertions and methods.
 
 Consider this minimal form:
 

@@ -678,10 +678,6 @@ class Assert {
         }
     }
 
-    _getEntry (name, autoCreate) {
-        return this.constructor._getEntry(name, autoCreate);
-    }
-
     static _addFn (target, modifier, fn) {
         const A = this;
         const entry = A._getEntry(modifier, false);
