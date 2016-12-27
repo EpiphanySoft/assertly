@@ -4,7 +4,6 @@ const Assert = require('./Assert');
 const $fs = require('fs');
 const $path = require('path');
 
-debugger
 Assert.setup();
 
 let entries = Assert.registry;

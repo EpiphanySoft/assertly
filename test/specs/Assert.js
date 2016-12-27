@@ -2681,7 +2681,7 @@ describe('Custom Assert', function () {
     CustomAssert.setup();
     CustomAssert.register({
         child: {
-            get (item) {debugger;
+            get (item) {
                 childGetterCalled = true;
                 return new CustomAssert(item && item.children && item.children[0]);
             },
@@ -2691,8 +2691,7 @@ describe('Custom Assert', function () {
         },
 
         firstChild: {
-            get () {
-                let v = this.value;
+            get (v) {
                 return new CustomAssert(v && v.children && v.children[0]);
             }
         },
@@ -2791,7 +2790,6 @@ describe('Custom Assert', function () {
             }
             catch (e) {
                 ok = true;
-                //debugger;
             }
 
             expect(ok).to.be(true);
@@ -2807,7 +2805,6 @@ describe('Custom Assert', function () {
             }
             catch (e) {
                 ok = true;
-                //debugger;
             }
 
             expect(ok).to.be(true);
