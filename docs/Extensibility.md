@@ -199,30 +199,10 @@ Rewriting the 'to.randomly' in normal form:
         }
     });
 
-#### Custom Getters
-
-At times it can be convenient for the property getter syntax to "navigate" from the
-base value assertion. Perhaps in a DOM assertion module one might want to say:
-
-    expect(el).firstChild.to.be.tag('div').
-        and.to.have.class('some-css-class');
-
-To implement a `firstChild` property like the above, a custom getter is needed:
-
-    Assert.register({
-        firstChild: {
-            get () {
-                return new Assert(this.value.firstChild);
-            }
-        }
-    });
-
-When a property returns something for it is not tracked in the `_modifiers` set.
-
 #### Custom Methods
 
 Non-assertion, general purpose methods can be registered by setting the `invoke`
-option:
+property:
 
     Assert.register({
         down: {
@@ -236,6 +216,66 @@ option:
 This would allow assertions like the following:
 
     expect(el).down('div.foo').to.be.truthy();
+
+It is illegal to combine `invoke` and `evaluate` in the same definition.
+
+#### Custom Getters
+
+At times it can be convenient for the property getter syntax to "navigate" from the
+base value assertion. Perhaps in a DOM assertion module one might want to say:
+
+    expect(el).firstChild.to.be.tag('div').
+        and.to.have.class('some-css-class');
+
+To implement a `firstChild` property like the above, a custom getter is needed:
+
+    Assert.register({
+        firstChild: {
+            get (actual) {
+                return new Assert(actual.firstChild);
+            }
+        }
+    });
+
+When a property returns something for it is not tracked in the `_modifiers` set.
+
+#### Custom Getters On Methods
+
+When a method or assertion also has a `get` defined, the timing is a bit different
+to allow the code to either execute the method or descend further down the dot-path.
+
+Consider:
+
+    expect('abc').to.have.length(3);
+
+    expect('abc').to.have.length.above(2);
+
+In the first case, the `length` assert is called and so its `get` function is not
+called, only `evaluate` is called.
+
+In the second case, since `length` is simply a modifier, its `get` function is called
+(but only because `above` was requested).
+
+The definition of the `length` method is basically like this:
+
+    Assert.register({
+        length: {
+            evaluate (actual, expected) {
+                return expected === actual ? actual.length : NaN;
+            },
+
+            get (actual) {
+                this.value = actual ? actual.length : NaN;
+            }
+        }
+    });
+
+When `get` is called, it simply adjusts `this.value` of the assertion to be that of
+the `length` property. This has the desired affect of influencing whatever is the
+eventual assertion method.
+
+While the above example relates to the `evaluate` function, the same applies to the
+`invoke` function as well.
 
 ## Adjusting The Defaults
 

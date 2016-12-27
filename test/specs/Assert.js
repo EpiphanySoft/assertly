@@ -1622,6 +1622,9 @@ function masterSuite (A) {
         it('should work on strings', function () {
             expect('abc').to.have.length(3);
         });
+        it('should chain on to lt', function () {
+            expect([1,2]).to.have.length.lt(4);
+        });
 
         describe('not', function () {
             it('should work on arguments', function () {
@@ -2660,6 +2663,7 @@ describe('Assert', function () {
 describe('Custom Assert', function () {
     const failureLog = [];
     const reportLog = [];
+    let childGetterCalled;
     let explodes;
 
     class CustomAssert extends Assert {
@@ -2676,9 +2680,18 @@ describe('Custom Assert', function () {
 
     CustomAssert.setup();
     CustomAssert.register({
+        child: {
+            get (item) {debugger;
+                childGetterCalled = true;
+                return new CustomAssert(item && item.children && item.children[0]);
+            },
+            invoke (item, index) {
+                return new CustomAssert(item && item.children && item.children[index]);
+            }
+        },
+
         firstChild: {
             get () {
-                debugger;
                 let v = this.value;
                 return new CustomAssert(v && v.children && v.children[0]);
             }
@@ -2740,7 +2753,7 @@ describe('Custom Assert', function () {
     const expect = CustomAssert.expect.bind(CustomAssert);
 
     afterEach(function () {
-        failureLog.length = reportLog.length = explodes = 0;
+        childGetterCalled = failureLog.length = reportLog.length = explodes = 0;
     });
 
     masterSuite(CustomAssert);
@@ -2874,31 +2887,50 @@ describe('Custom Assert', function () {
     });
 
     describe('Getter', function () {
-        it('should be able to return a chained Assert directly', function () {
-            let c = { c: 42 };
-            let o = {
-                children: [c]
-            };
+        let c = { c: 42 };
+        let o = {
+            children: [c]
+        };
 
+        it('should be able to return a chained Assert directly', function () {
             expect(o).firstChild.to.be(c);
         });
 
         it('should be able to return a chained Assert following a modifier', function () {
-            let c = { c: 42 };
-            let o = {
-                children: [c]
-            };
-
             expect(o).to.firstChild.to.be(c);
         });
 
         it('should be able to return a chained Assert following an assert', function () {
-            let c = { c: 42 };
-            let o = {
-                children: [c]
-            };
-
             expect(o).to.be.firstChild.to.be(c);
+        });
+    });
+
+    describe('Methods', function () {
+        let c = { c: 42 };
+        let d = { d: 427 };
+        let o = {
+            children: [c, d]
+        };
+
+        it('should be able to return a chained Assert directly', function () {
+            expect(o).child(1).to.be(d);
+            expect(childGetterCalled).to.be.falsy();
+        });
+
+        it('should be able to return a chained Assert following a modifier', function () {
+            expect(o).to.child(1).to.be(d);
+            expect(childGetterCalled).to.be.falsy();
+        });
+
+        it('should be able to return a chained Assert following an assert', function () {
+            expect(o).to.be.child(1).to.be(d);
+            expect(childGetterCalled).to.be.falsy();
+        });
+
+        it('should be call method getter if used as a modifier', function () {
+            expect(childGetterCalled).to.be.falsy();
+            expect(o).child.to.be(c);
+            expect(childGetterCalled).to.be.truthy();
         });
     });
 });

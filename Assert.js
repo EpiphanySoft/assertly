@@ -264,18 +264,16 @@ class Assert {
             },
 
             flatly: {
-                get () {
-                    let v = this.value;
-                    if (v && typeof v === 'object') {
-                        this.value = Util.copy({}, v);
+                get (value) {
+                    if (value && typeof value === 'object') {
+                        this.value = Util.copy({}, value);
                     }
                 }
             },
 
             get: {
-                invoke (name) {
-                    let v = this.value;
-                    return new A(v && v[name]);
+                invoke (value, name) {
+                    return new A(value && value[name]);
                 }
             },
 
@@ -321,12 +319,15 @@ class Assert {
                 return ok;
             },
 
-            length (actual, expected) {
-                let len = actual ? actual.length : NaN;
-                if (isNaN(len)) {
-                    return false;
+            length: {
+                evaluate (actual, expected) {
+                    let len = actual ? actual.length : NaN;
+                    return len === expected;
+                },
+                get () {
+                    let v = this.value;
+                    this.value = v ? v.length : NaN;
                 }
-                return len === expected;
             },
 
             'lessThan,lt,below' (actual, expected) {
@@ -521,7 +522,7 @@ class Assert {
 
             ret[name] = {
                 name: name,
-                alias: names.length ? names : [],
+                alias: names,
                 evaluate: def.evaluate || null,
                 explain: def.explain || null,
                 get: def.get || null,
@@ -547,39 +548,15 @@ class Assert {
 
             for (let name of Object.keys(registry)) {
                 let def = registry[name];
-                let evaluate = def.evaluate && A.wrapAssertion(def);
-                let invoke = def.invoke;
-                let names = [name].concat(def.alias);
+                let entry = A._getEntry(name, def);
 
-                for (let s of names) {
-                    let entry = A._getEntry(s);
-                    let was = entry.def;
+                entry.update(def);
 
-                    if (was && s === name) {
-                        if (invoke) {
-                            def.invoke._super = was.invoke;
-                        }
-                        else if (evaluate) {
-                            def.evaluate._super = was.evaluate;
+                for (let s of def.alias) {
+                    A.registry[s] = entry;
 
-                            if (def.explain) {
-                                def.explain._super = was.explain || null;
-                            }
-                        }
-                    }
-
-                    entry.def = def;
-
-                    if (invoke) {
-                        entry.fn = invoke;
-                        entry.track = !!def.track;
-
-                        A._addFn(P, s, invoke);
-                    }
-                    else if (evaluate) {
-                        entry.fn = evaluate;
-
-                        A._addFn(P, s, evaluate);
+                    if (entry.fn) {
+                        A._addFn(P, s, entry.fn);
                     }
                     else {
                         A._addModifier(P, s);
@@ -653,6 +630,16 @@ class Assert {
         return wrap;
     }
 
+    static wrapInvoke (def) {
+        let wrap = function (...expected) {
+            return def.invoke(this.value, ...expected);
+        };
+
+        wrap.def = def;
+
+        return wrap;
+    }
+
     //-----------------------------------------------------------------------
     // Private
 
@@ -680,7 +667,7 @@ class Assert {
 
     static _addFn (target, modifier, fn) {
         const A = this;
-        const entry = A._getEntry(modifier, false);
+        const entry = A._getEntry(modifier);
 
         Object.defineProperty(target, modifier, {
             configurable: true,
@@ -690,7 +677,16 @@ class Assert {
                     return fn.apply(bound.$me, args);
                 };
 
-                bound.$me = this.$me || this;
+                let me = this.$me || this;
+                let from = this.$entry;
+                let get = from && from.def.get;
+
+                if (get) {
+                    me = get.call(me, me.value, from) || me;
+                }
+
+                bound.$entry = entry;
+                bound.$me = me;
                 bound.$me._applyModifier(modifier, entry.track);
 
                 for (let mod in A.registry) {
@@ -706,11 +702,6 @@ class Assert {
                     }
                 }
 
-                let getter = entry.def.get;
-                if (getter) {
-                    return getter.call(bound.$me, bound) || bound;
-                }
-
                 return bound;
             }
         });
@@ -722,23 +713,29 @@ class Assert {
         }
 
         const A = this;
-        const entry = A._getEntry(name, false);
+        const entry = A._getEntry(name);
 
         Object.defineProperty(target, name, {
             get () {
                 let ret = this;
-                let assertion = ret.$me || ret;
-                let get = entry.def.get;
+                let me = ret.$me || ret;
+                let from = ret.$entry;
+                let get = from && from.def.get;
 
                 if (get) {
-                    let v = get.call(assertion);
+                    me = get.call(me, me.value, from) || me;
+                }
+
+                get = entry.def.get;
+                if (get) {
+                    let v = get.call(me, me.value);
 
                     if (v) {
                         return v;
                     }
                 }
 
-                assertion._applyModifier(name);
+                me._applyModifier(name);
                 return ret;
             }
         });
@@ -746,7 +743,7 @@ class Assert {
         return true;
     }
 
-    static _getEntry (name, autoCreate) {
+    static _getEntry (name, def) {
         if (name !== '$' && !Util.validNameRe.test(name)) {
             throw new Error(`Cannot register invalid name "${name}"`);
         }
@@ -775,15 +772,14 @@ class Assert {
             }
         }
 
-        let registry = A.registry;
-        let entry = registry[name];
+        let entry = A.registry[name];
 
-        if (!entry && autoCreate !== false) {
+        if (!entry && def) {
             if (A.forbidden[name]) {
                 throw new Error(`Cannot redefine "${name}"`);
             }
 
-            registry[name] = entry = { name, def: { name }};
+            entry = new A.Entry(A, name, def);
         }
 
         return entry;
@@ -793,6 +789,56 @@ class Assert {
 Assert.Conjunction = class {
     constructor (owner) {
         this._owner = owner;
+    }
+};
+
+Assert.Entry = class {
+    constructor (A, name, def) {
+        let me = this;
+        let evaluate = def.evaluate && A.wrapAssertion(def);
+        let invoke = def.invoke && A.wrapInvoke(def);
+
+        me.name = name;
+        me.def = def;
+        me.fn = invoke || evaluate || null;
+
+        if (invoke) {
+            me.track = !!def.track;
+        }
+
+        A.registry[name] = me;
+
+        if (me.fn) {
+            A._addFn(A.prototype, name, me.fn);
+        }
+        else {
+            A._addModifier(A.prototype, name);
+        }
+    }
+
+    update (def) {
+        let me = this;
+        let was = me.def;
+
+        if (was && was !== def) {
+            let evaluate = def.evaluate;
+            let invoke = def.invoke;
+
+            if (invoke) {
+                invoke._super = was.invoke;
+            }
+            else if (evaluate) {
+                evaluate._super = was.evaluate;
+
+                if (def.explain) {
+                    def.explain._super = was.explain || null;
+                }
+            }
+
+            if (def.get) {
+                def.get._super = was.get || null;
+            }
+        }
     }
 };
 

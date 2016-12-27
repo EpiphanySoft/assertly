@@ -12,13 +12,12 @@ let keys = Object.keys(entries);
 
 keys.sort();
 
-let canon = keys.filter(key => key !== '$' &&
-        (!entries[key].fn || key === entries[key].def.name));
+let canon = keys.filter(key => !entries[key].fn || key === entries[key].name);
 
 // console.log(`paths[${paths.length}] = `, paths);
 
 function logInfo (name) {
-    let aliases = keys.filter(k => k !== name && name === entries[k].def.name);
+    let aliases = keys.filter(k => k !== name && name === entries[k].name);
 
     if (aliases.length) {
         aliases.sort();
