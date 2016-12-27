@@ -5,6 +5,9 @@ const inspect = require(isNode ? 'util' : './inspect').inspect;
 const arraySlice = Array.prototype.slice;
 const toString = Object.prototype.toString;
 
+function Empty () {}
+Empty.prototype = Object.create(null);
+
 /**
  * @class Assert
  */
@@ -17,9 +20,10 @@ class Assert {
     constructor (value, previous) {
         let me = this;
 
+        me.assertions = [];
         me.value = value;
 
-        me._modifiers = {};
+        me._modifiers = new Empty();
         me._previous = previous || null;
         me._state = me._getEntry('$', false);
 
@@ -120,18 +124,14 @@ class Assert {
         me.actual = A.print(me.value);
         me.expectation = me.expectation || (n ? A.print(n === 1 ? exp[0] : exp) : '');
 
-        let mods = Object.keys(me._modifiers);
-
-        me.assertions = mods;
-
         let ret = fn && fn.call(me, me.value, ...exp);
 
         if (!ret) {
-            if (me.expectation) {
-                mods.push(me.expectation);
-            }
+            ret = `Expected ${me.actual} ${me.assertions.join(' ')}`;
 
-            ret = `Expected ${me.actual} ${mods.join(' ')}`;
+            if (me.expectation) {
+                ret += ' ' + me.expectation;
+            }
         }
 
         return ret;
@@ -169,9 +169,8 @@ class Assert {
         const A = this;
 
         return this.normalize({
-            not: 'to',
-            to:  'not',
-
+            to: 'not',
+            '$,to,be.not.to': {},
             'to.only': ['have', 'own'],
             'to.have': ['own', 'only'],
 
@@ -253,7 +252,18 @@ class Assert {
                 return ret;
             },
 
-            'to.equal' (actual, expected) {
+            'to,flatly.equal' (actual, expected) {
+                if (actual && expected && this._modifiers.flatly) {
+                    debugger;
+                    let ta = Util.typeOf(actual);
+                    let te = Util.typeOf(expected);
+
+                    if (ta === te && ta === 'object') {
+                        actual = Util.copy({}, actual);
+                        expected = Util.copy({}, expected);
+                    }
+                }
+
                 return Util.isEqual(actual, expected);
             },
 
@@ -261,10 +271,16 @@ class Assert {
                 return !actual;
             },
 
-            '.get': {
-                exec () {
+            'to.flatly': {},
+
+            get: {
+                invoke (name) {
                     debugger;
-                    return 42;
+                    let v = this.value;
+
+                    v = v && v[name];
+
+                    return new A(v);
                 }
             },
 
@@ -477,17 +493,20 @@ class Assert {
                 let a = tuples[0];
 
                 a = a && a.split(',');
-                b = b && b.split(',');
+                // There is always a before, so if it is empty, assume root
+                b = b ? b.split(',') : ['$'];
 
                 after = a ? after.concat(a) : after;
-                before  = b ? before.concat(b)  : before;
+                before = before.concat(b);
             }
 
             if (!before.length) {
                 before = [def.evaluate ? (name === 'be' ? 'to' : 'be') : '$'];
             }
-            if (before.indexOf('to') > -1 && before.indexOf('not') < 0) {
-                before = ['not'].concat(before);
+            if (before.indexOf('not') < 0) {
+                if (before.indexOf('to') > -1 || before.indexOf('be') > -1) {
+                    before = ['not'].concat(before);
+                }
             }
 
             let names = name.split(',');
@@ -502,9 +521,9 @@ class Assert {
                 after: after,
                 before: before,
                 evaluate: def.evaluate || null,
-                exec: def.exec || null,
                 explain: def.explain || null,
                 get: def.get || null,
+                invoke: def.invoke || null,
                 name: name
             };
         }
@@ -527,28 +546,42 @@ class Assert {
             for (let name of Object.keys(registry)) {
                 let def = registry[name];
                 let evaluate = def.evaluate && A.wrapAssertion(def);
+                let invoke = def.invoke;
                 let names = [name].concat(def.alias);
 
                 for (let s of names) {
-                    let entry = A._getEntry(s, name);
-                    entry.add(def.after);
+                    let entry = A._getEntry(s);
+                    let was = entry.def;
 
-                    if (evaluate) {
-                        let was = entry.def;
-
-                        if (was) {
+                    if (was && s === name) {
+                        if (invoke) {
+                            def.invoke._super = was.invoke;
+                        }
+                        else if (evaluate) {
                             def.evaluate._super = was.evaluate;
+
                             if (def.explain) {
                                 def.explain._super = was.explain || null;
                             }
                         }
+                    }
 
-                        entry.def = def;
-                        entry.evaluate = evaluate;
+                    entry.def = def;
+                    entry.add(def.after);
+
+                    if (invoke) {
+                        entry.fn = invoke;
+                        entry.track = !!def.track;
+
+                        A._addFn(P, s, invoke);
+                    }
+                    else if (evaluate) {
+                        entry.fn = evaluate;
+
                         A._addFn(P, s, evaluate);
                     }
                     else {
-                        A._addModifier(P, s, name);
+                        A._addModifier(P, s);
                     }
 
                     for (let b of def.before) {
@@ -641,14 +674,23 @@ class Assert {
      * map accordingly. This method will throw an `Error` if modifier cannot be used
      * in the current state.
      * @param {String} modifier
+     * @param {Boolean} [track=true]
      * @private
      */
-    _applyModifier (modifier) {
+    _applyModifier (modifier, track) {
         let state = this._state;
 
-        this._state = state = state.get(modifier);
+        this._state = state = state.next(modifier);
 
-        this._modifiers[state.name] = true;
+        if (track !== false) {
+            let modifiers = this._modifiers;
+            let name = state.def ? state.def.name : state.name;
+
+            if (!modifiers[name]) {
+                modifiers[name] = true;
+                this.assertions.push(modifier);
+            }
+        }
     }
 
     _getEntry (name, autoCreate) {
@@ -664,37 +706,51 @@ class Assert {
 
             get () {
                 let bound = function (...args) {
-                    return fn.apply(bound.instance, args);
+                    return fn.apply(bound.$me, args);
                 };
 
-                bound.instance = this.instance || this;
-                bound._applyModifier = function (m) {
-                    bound.instance._applyModifier(m);
-                };
-
-                bound.instance._applyModifier(modifier);
+                bound.$me = this.$me || this;
+                bound.$me._applyModifier(modifier, entry.track);
 
                 let already = {};
                 entry.all.forEach(mod => {
                     A._decorate(bound, mod, already);
                 });
 
+                let getter = entry.def.get;
+                if (getter) {
+                    return getter.call(bound.$me, bound) || bound;
+                }
+
                 return bound;
             }
         });
     }
 
-    static _addModifier (target, name, canonicalName) {
+    static _addModifier (target, name) {
         if (Object.getOwnPropertyDescriptor(target, name)) {
             throw new Error(`Modifier "${name}" already defined`);
         }
 
-        canonicalName = canonicalName || name;
+        const A = this;
+        const entry = A._getEntry(name, false);
 
         Object.defineProperty(target, name, {
             get () {
-                this._applyModifier(canonicalName);
-                return this;
+                let ret = this;
+                let assertion = ret.$me || ret;
+                let get = entry.def && entry.def.get;
+
+                if (get) {
+                    let v = get.call(assertion);
+
+                    if (v) {
+                        return v;
+                    }
+                }
+
+                assertion._applyModifier(name);
+                return ret;
             }
         });
 
@@ -719,8 +775,8 @@ class Assert {
             // The array of modifiers allowed to follow this one:
             let entry = A._getEntry(modifier, false);
 
-            // Check to see if this modifier is also an assertion method:
-            let fn = entry.evaluate;
+            // Check to see if this fellow is a method:
+            let fn = entry.fn;
 
             if (fn) {
                 A._addFn(target, modifier, fn);
@@ -735,11 +791,7 @@ class Assert {
         }
     }
 
-    static _getEntry (name, canonicalName, autoCreate) {
-        if (typeof canonicalName === 'boolean') {
-            autoCreate = canonicalName;
-            canonicalName = null;
-        }
+    static _getEntry (name, autoCreate) {
         if (name !== '$' && !Util.validNameRe.test(name)) {
             throw new Error(`Cannot register invalid name "${name}"`);
         }
@@ -776,7 +828,7 @@ class Assert {
                 throw new Error(`Cannot redefine "${name}"`);
             }
 
-            registry[name] = entry = new A.Modifier(A, name, canonicalName);
+            registry[name] = entry = new A.Modifier(A, name);
         }
 
         return entry;
@@ -784,14 +836,11 @@ class Assert {
 } // Assert
 
 Assert.Modifier = class {
-    constructor (owner, name, canonicalName) {
+    constructor (owner, name) {
         this.all = [];
         this.map = {};
         this.name = name;
         this.owner = owner;
-        this.canonicalName = canonicalName || name;
-
-        this.alias = this.canonicalName !== name;
     }
 
     add (name) {
@@ -811,7 +860,7 @@ Assert.Modifier = class {
         }
     }
 
-    get (name) {
+    next (name) {
         if (!this.map[name]) {
             let msg = `Expectation cannot use "${name}" `;
 
@@ -856,6 +905,20 @@ const Util = Assert.Util = {
     validNameRe: /^[a-z][a-z0-9_]*$/i,
 
     inspect: inspect,
+
+    copy (dest, ...sources) {
+        if (dest) {
+            for (let src of sources) {
+                if (src) {
+                    for (let key in src) {
+                        dest[key] = src[key];
+                    }
+                }
+            }
+        }
+
+        return dest;
+    },
 
     isArrayLike (v) {
         if (!v || Util.notArrayLikeRe.test(typeof v)) {

@@ -1196,13 +1196,38 @@ function masterSuite (A) {
         });
     });
 
+    describe('get', function () {
+        it('should return a new assertion', function () {
+            debugger;
+            expect(0).to.be.not.truthy();
+            let a = expect({a: 1}).get('a');
+        });
+    });
+
     ['above', 'greaterThan', 'gt'].forEach(function (gt) {
         describe(gt, function () {
             it('should match greater numbers', function () {
-                expect(3).to.be[gt](2);
+                let a = expect(3);
+
+                a.to.be[gt](2);
+
+                // _modifiers should always hold the canonical name not an alias:
+                expect(a._modifiers).to.flatly.equal({
+                    to: true,
+                    be: true,
+                    greaterThan: true
+                });
             });
+
             it('should match greater strings', function () {
                 expect('b').to.be[gt]('a');
+
+                try {
+                    expect('b').to.be[gt]('c');
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected 'b' to be ${gt} 'c'`);
+                }
             });
 
             describe('not', function () {
@@ -2596,6 +2621,14 @@ describe('Custom Assert', function () {
 
     CustomAssert.setup();
     CustomAssert.register({
+        '$,to,be.firstChild': {
+            get () {
+                debugger;
+                let v = this.value;
+                return new CustomAssert(v && v.children && v.children[0]);
+            }
+        },
+
         nan: {
             evaluate: function fn (actual, expected) {
                 let r = fn._super.call(this, actual, expected);
@@ -2608,7 +2641,7 @@ describe('Custom Assert', function () {
             }
         },
 
-        'to,only/randomly': true,
+        'to,only/randomly': {},
 
         'to,only,randomly/explode' () {
             let modifiers = this._modifiers;
@@ -2775,6 +2808,35 @@ describe('Custom Assert', function () {
                     'to._foo': true
                 });
             }).to.throw(`Cannot register invalid name "_foo"`);
+        });
+    });
+
+    describe.only('Getter', function () {
+        it('should be able to return a chained Assert directly', function () {
+            let c = { c: 42 };
+            let o = {
+                children: [c]
+            };
+
+            expect(o).firstChild.to.be(c);
+        });
+
+        it('should be able to return a chained Assert following a modifier', function () {
+            let c = { c: 42 };
+            let o = {
+                children: [c]
+            };
+
+            expect(o).to.firstChild.to.be(c);
+        });
+
+        it('should be able to return a chained Assert following an assert', function () {
+            let c = { c: 42 };
+            let o = {
+                children: [c]
+            };
+
+            expect(o).to.be.firstChild.to.be(c);
         });
     });
 });
