@@ -1,3 +1,7 @@
+### equal
+
+ - to[.not].equal
+
 The `equal` assertion compares the `actual` and `expected` values using `==`. This means
 that type conversions will be applied:
 

@@ -1,3 +1,7 @@
+### greaterThanOrEqual (aka: "atLeast", "ge", "gte")
+
+ - to[.not].be.greaterThanOrEqual
+
 The `greaterThanOrEqual` assertion compares values using `>=`.
 
 For example:

@@ -1,3 +1,7 @@
+### in
+
+ - to[.not].be.in
+
 The `in` assertion determines if the `actual` value is present using `indexOf`. This
 enables both strings and arrays to be used as values.
 

@@ -1,3 +1,7 @@
+### lessThanOrEqual (aka: "atMost", "le", "lte")
+
+ - to[.not].be.lessThanOrEqual
+
 The `lessThanOrEqual` assertion compares values using `<=`.
 
 For example:

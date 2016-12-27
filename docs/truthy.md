@@ -1,3 +1,7 @@
+### truthy (aka: "ok")
+
+ - to[.not].be.truthy
+
 The `truthy` assertion ensures that the `actual` value is "true-like". In other
 words, that it would satisfy an `if` test.
 

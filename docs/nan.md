@@ -1,3 +1,7 @@
+### nan (aka: "NaN")
+
+ - to[.not].be.nan
+
 The `nan` assertion ensures that a value `isNaN()`.
 
 For example:

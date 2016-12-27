@@ -5,6 +5,8 @@
 const Assert = require('../../Assert');
 const Util = Assert.Util;
 
+const emptyFn = () => {};
+
 describe('isArrayLike', function () {
     const A = Assert;
     const expect = A.expect;
@@ -1123,6 +1125,20 @@ function masterSuite (A) {
             }
             foo(1, 2);
         });
+
+        it('should be able to flatten', function () {
+            let a = Object.create({ a: 1 });
+            let b = Object.create({ a: '1' });
+
+            expect(a).to.not.equal(b);
+
+            expect(a).to.flatly.equal(b);
+
+            expect(() => {
+                expect(a).to.not.flatly.equal(b);
+            }).
+            to.throw(`Expected { a: 1 } to not flatly equal { a: '1' }`);
+        });
     });
 
     describe('falsy', function () {
@@ -1198,9 +1214,17 @@ function masterSuite (A) {
 
     describe('get', function () {
         it('should return a new assertion', function () {
-            debugger;
             expect(0).to.be.not.truthy();
             let a = expect({a: 1}).get('a');
+        });
+
+        it('should not explode on undefined', function () {
+            expect(undefined).get('a').to.be(undefined);
+
+            expect(() => {
+                expect(undefined).get('a').not.to.be(undefined);
+            }).
+            to.throw(`Expected undefined not to be undefined`);
         });
     });
 
@@ -2115,6 +2139,20 @@ function masterSuite (A) {
             }
             foo(1, 2);
         });
+
+        it('should be able to flatten', function () {
+            let a = Object.create({ a: 1 });
+            let b = Object.create({ a: 1 });
+
+            expect(a).to.not.be.same(b);
+
+            expect(a).to.be.flatly.same(b);
+
+            expect(() => {
+                expect(a).to.not.be.flatly.same(b);
+            }).
+            to.throw(`Expected { a: 1 } to not be flatly the same as { a: 1 }`);
+        });
     });
 
     describe('throw', function () {
@@ -2125,8 +2163,8 @@ function masterSuite (A) {
         });
 
         it('should succeed if function does not throw', function () {
-            expect(function () {}).not.to.throw();
-            expect(function () {}).to.not.throw();
+            expect(emptyFn).not.to.throw();
+            expect(emptyFn).to.not.throw();
         });
 
         it('should match exception message as a string', function () {
@@ -2152,8 +2190,11 @@ function masterSuite (A) {
                 expect(function foobar () {}).to.throw();
             }
             catch (e) {
-                expect(e.message).to.contain('Expected [Function: foobar] to throw');
+                expect(e.message).to.be('Expected [Function: foobar] to throw but it did not throw');
+                return;
             }
+
+            throw new Error('Did not throw');
         });
 
         describe('not', function () {
@@ -2164,8 +2205,11 @@ function masterSuite (A) {
                     }).to.throw('Foo');
                 }
                 catch (e) {
-                    expect(e.message).to.contain(`Expected [Function: fizzo] to throw 'Foo'`);
+                    expect(e.message).to.be(`Expected [Function: fizzo] to throw 'Foo' but it threw 'Bar'`);
+                    return;
                 }
+
+                throw new Error('Did not throw');
             });
 
             it('should fail on mismatch exception message as a regex', function () {
@@ -2175,8 +2219,11 @@ function masterSuite (A) {
                     }).to.throw(/foo/i);
                 }
                 catch (e) {
-                    expect(e.message).to.contain('Expected [Function: bizzo] to throw /foo/i');
+                    expect(e.message).to.be(`Expected [Function: bizzo] to throw /foo/i but it threw 'Bar'`);
+                    return;
                 }
+
+                throw new Error('Did not throw');
             });
 
             it('should fail if function throws but expected to not', function () {
@@ -2186,8 +2233,11 @@ function masterSuite (A) {
                     }).to.not.throw();
                 }
                 catch (e) {
-                    expect(e.message).to.contain('Expected [Function: foobar] to not throw');
+                    expect(e.message).to.be(`Expected [Function: foobar] to not throw but it threw 'foobar!!'`);
+                    return;
                 }
+
+                throw new Error('Did not throw');
             });
 
             it('should fail if function throws but expected not to', function () {
@@ -2197,8 +2247,11 @@ function masterSuite (A) {
                     }).not.to.throw();
                 }
                 catch (e) {
-                    expect(e.message).to.contain('Expected [Function: foobar] not to throw');
+                    expect(e.message).to.be(`Expected [Function: foobar] not to throw but it threw 'foobar!!'`);
+                    return;
                 }
+
+                throw new Error('Did not throw');
             });
         });
     }); // throw
@@ -2811,7 +2864,7 @@ describe('Custom Assert', function () {
         });
     });
 
-    describe.only('Getter', function () {
+    describe('Getter', function () {
         it('should be able to return a chained Assert directly', function () {
             let c = { c: 42 };
             let o = {

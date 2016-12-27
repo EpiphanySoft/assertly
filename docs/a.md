@@ -1,3 +1,7 @@
+### a (aka: "an")
+
+ - to[.not].be.a
+
 The `a` or (`an`) assertion is useful for type matching. For example:
 
     expect(a).to.be.an('array');

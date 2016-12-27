@@ -1,3 +1,7 @@
+### throw
+
+ - to[.not].throw
+
 The `throw` assertion ensures that a function throws an exception.
 
 For example:

@@ -253,34 +253,29 @@ class Assert {
             },
 
             'to,flatly.equal' (actual, expected) {
-                if (actual && expected && this._modifiers.flatly) {
-                    debugger;
-                    let ta = Util.typeOf(actual);
-                    let te = Util.typeOf(expected);
-
-                    if (ta === te && ta === 'object') {
-                        actual = Util.copy({}, actual);
-                        expected = Util.copy({}, expected);
-                    }
+                if (this._modifiers.flatly && expected && typeof expected === 'object') {
+                    this.expected[0] = expected = Util.copy({}, expected);
                 }
-
-                return Util.isEqual(actual, expected);
+                return Util.isEqual(actual, expected, false);
             },
 
             'falsy' (actual) {
                 return !actual;
             },
 
-            'to.flatly': {},
+            'to,be.flatly': {
+                get () {
+                    let v = this.value;
+                    if (v && typeof v === 'object') {
+                        this.value = Util.copy({}, v);
+                    }
+                }
+            },
 
             get: {
                 invoke (name) {
-                    debugger;
                     let v = this.value;
-
-                    v = v && v[name];
-
-                    return new A(v);
+                    return new A(v && v[name]);
                 }
             },
 
@@ -399,8 +394,11 @@ class Assert {
                 }
             },
 
-            same: {
+            'be,flatly.same': {
                 evaluate (actual, expected) {
+                    if (this._modifiers.flatly && expected && typeof expected === 'object') {
+                        this.expected[0] = expected = Util.copy({}, expected);
+                    }
                     return Util.isEqual(actual, expected, true);
                 },
                 explain () {
@@ -411,25 +409,60 @@ class Assert {
                 }
             },
 
-            'to.throw' (fn, type) {
-                let msg, ok = false;
+            'to.throw': {
+                evaluate (fn, type) {
+                    let msg, ok = false;
 
-                try {
-                    fn();
-                }
-                catch (e) {
-                    ok = true;
-                    msg = e.message;
-
-                    if (typeof type === 'string') {
-                        ok = (msg.indexOf(type) > -1);
+                    try {
+                        fn();
                     }
-                    else if (type) {
-                        ok = type.test(msg);
+                    catch (e) {
+                        ok = true;
+                        msg = e.message;
+
+                        if (typeof type === 'string') {
+                            ok = (msg.indexOf(type) > -1);
+                        }
+                        else if (type) {
+                            ok = type.test(msg);
+                        }
+
+                        e.matched = ok;
+                        this._threw = e;
+                    }
+
+                    return ok;
+                },
+
+                explain (fn, type) {
+                    if (this.failed) {
+                        let not = this._modifiers.not;
+                        let e = this._threw;
+                        let s = this.expectation;
+
+                        s = s ? s + ' ' : '';
+
+                        if (!e) {
+                            // expect(f).to.throw('X')
+                            //  ==> Expected f to throw X and it did not throw
+                            s += `but it did not throw`;
+                        }
+                        else if (type && e.matched) {
+                            // expect(f).not.to.throw('X')
+                            //  ==> Expected f not to throw X but it did
+                            // expect(f).not.to.throw();
+                            //  ==> Expected f not to throw but it did
+                            s += `but it did`;
+                        }
+                        else {
+                            // expect(f).to.throw('X')
+                            //  ==> Expected f to throw X but threw Y
+                            s += `but it threw ${A.print(e.message)}`;
+                        }
+
+                        this.expectation = s;
                     }
                 }
-
-                return ok;
             },
 
             'truthy,ok' (actual) {
@@ -517,6 +550,7 @@ class Assert {
             }
 
             ret[name] = {
+                name: name,
                 alias: names.length ? names : [],
                 after: after,
                 before: before,
@@ -524,7 +558,7 @@ class Assert {
                 explain: def.explain || null,
                 get: def.get || null,
                 invoke: def.invoke || null,
-                name: name
+                next: def.next || null
             };
         }
 
@@ -684,7 +718,7 @@ class Assert {
 
         if (track !== false) {
             let modifiers = this._modifiers;
-            let name = state.def ? state.def.name : state.name;
+            let name = state.def.name;
 
             if (!modifiers[name]) {
                 modifiers[name] = true;
@@ -739,7 +773,7 @@ class Assert {
             get () {
                 let ret = this;
                 let assertion = ret.$me || ret;
-                let get = entry.def && entry.def.get;
+                let get = entry.def.get;
 
                 if (get) {
                     let v = get.call(assertion);
@@ -835,9 +869,16 @@ class Assert {
     }
 } // Assert
 
+Assert.Conjunction = class {
+    constructor (owner) {
+        this._owner = owner;
+    }
+};
+
 Assert.Modifier = class {
     constructor (owner, name) {
         this.all = [];
+        this.def = { name: name };
         this.map = {};
         this.name = name;
         this.owner = owner;

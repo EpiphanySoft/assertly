@@ -1,3 +1,7 @@
+### falsy
+
+ - to[.not].be.falsy
+
 The `falsy` assertion ensures that the `actual` value is "false-like". In other
 words, that it would fail an `if` test.
 

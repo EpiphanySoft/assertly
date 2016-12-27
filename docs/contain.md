@@ -1,3 +1,7 @@
+### contain
+
+ - to[.not].contain
+
 The `contain` assertion matches based on the `indexOf` method and is this suitable
 for strings or arrays.
 

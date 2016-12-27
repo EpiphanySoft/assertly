@@ -1,3 +1,7 @@
+### match
+
+ - to[.not].match
+
 The `match` assertion checks that the `actual` value match an expected `RegExp`.
 
 For example:
