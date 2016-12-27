@@ -70,7 +70,7 @@ itself. There are times, however, explanations can be improved with a little log
 
     Assert.register({
         christmas: {
-            fn (value) {
+            evaluate (value) {
                 return value.getMonth() === 11 && value.getDate() === 25;
             },
 
@@ -95,9 +95,9 @@ itself. There are times, however, explanations can be improved with a little log
         }
     });
 
-The parameters passed to `explain` are the same as those passed to the assertion `fn`,
-which are first the "actual" value (the one passed to `expect`) and then the values
-passed in the assertion call.
+The parameters passed to `explain` are the same as those passed to the assertion's
+`evaluate` function, which are first the "actual" value (the one passed to `expect`)
+and then the values passed in the assertion call.
 
 For example:
 
@@ -107,7 +107,7 @@ For example:
 
     Assert.register({
         foo: {
-            fn (x, y, z) {
+            evaluate (x, y, z) {
                 // truth test
             },
 
@@ -199,7 +199,7 @@ full, normalized form is an object with the following properties:
  - `alias` - The array of alternate names (e.g. "a" and "an").
  - `after` - The array of names that come _after_ this name.
  - `before` - The array of names that come _before_ this name.
- - `fn` - The assertion `Function` that will return `true` for success.
+ - `evaluate` - The assertion `Function` that will return `true` for success.
  - `explain` - The `Function` that will return a string explaining the assertion.
 
 Rewriting the 'to.randomly' in normal form:
@@ -211,7 +211,7 @@ Rewriting the 'to.randomly' in normal form:
 
         throw: {
             before: ['to', 'randomly'],
-            fn (fn, type) {
+            evaluate (fn, type) {
                 if (this.modifiers.randomly) {
                     //... hmmm
                 }
@@ -265,7 +265,7 @@ For example:
     // Take over nan assertion (which has an explain)
     Assert.register({
         nan: {
-            fn: function fn (actual, expected) {
+            evaluate: function fn (actual, expected) {
                 let r = fn._super.call(this, actual, expected);
                 return r;
             },

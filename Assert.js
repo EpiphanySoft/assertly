@@ -35,7 +35,7 @@ class Assert {
 
         if (expected) {
             try {
-                let result = !me._def.fn.call(me, me.value, ...expected);
+                let result = !me._def.evaluate.call(me, me.value, ...expected);
 
                 me.failed = me._modifiers.not ? !result : result;
             }
@@ -152,14 +152,6 @@ class Assert {
         return conjunction;
     }
 
-    get (name) {
-        let v = this.value;
-
-        v = v ? v[name] : undefined;
-
-        return new this.constructor(v);
-    }
-
     report () {
         let me = this;
         let failure = me.failed;
@@ -184,7 +176,7 @@ class Assert {
             'to.have': ['own', 'only'],
 
             'a,an': {
-                fn (actual, expected) {
+                evaluate (actual, expected) {
                     let te = Util.typeOf(expected);
                     let re = te === 'regexp';
 
@@ -208,7 +200,7 @@ class Assert {
             },
 
             'approx,approximately': {
-                fn (actual, expected, epsilon) {
+                evaluate (actual, expected, epsilon) {
                     epsilon = epsilon || 0.001;
 
                     A.expect(actual).to.be.a('number');
@@ -267,6 +259,13 @@ class Assert {
 
             'falsy' (actual) {
                 return !actual;
+            },
+
+            '.get': {
+                exec () {
+                    debugger;
+                    return 42;
+                }
             },
 
             'greaterThan,gt,above' (actual, expected) {
@@ -332,7 +331,7 @@ class Assert {
             },
 
             'nan,NaN': {
-                fn (actual) {
+                evaluate (actual) {
                     return isNaN(actual);
                 },
                 explain () {
@@ -344,7 +343,7 @@ class Assert {
             },
 
             'have,only,own|property': {
-                fn (object, property, value) {
+                evaluate (object, property, value) {
                     let only = this._modifiers.only;
                     //TODO deep properties "foo.bar.baz"
 
@@ -385,7 +384,7 @@ class Assert {
             },
 
             same: {
-                fn (actual, expected) {
+                evaluate (actual, expected) {
                     return Util.isEqual(actual, expected, true);
                 },
                 explain () {
@@ -458,7 +457,7 @@ class Assert {
 
             if (t === 'function') {
                 def = {
-                    fn: def
+                    evaluate: def
                 };
             }
             else if (t === 'string' || Array.isArray(def)) {
@@ -485,7 +484,7 @@ class Assert {
             }
 
             if (!before.length) {
-                before = [def.fn ? (name === 'be' ? 'to' : 'be') : '$'];
+                before = [def.evaluate ? (name === 'be' ? 'to' : 'be') : '$'];
             }
             if (before.indexOf('to') > -1 && before.indexOf('not') < 0) {
                 before = ['not'].concat(before);
@@ -502,8 +501,10 @@ class Assert {
                 alias: names.length ? names : [],
                 after: after,
                 before: before,
+                evaluate: def.evaluate || null,
+                exec: def.exec || null,
                 explain: def.explain || null,
-                fn: def.fn || null,
+                get: def.get || null,
                 name: name
             };
         }
@@ -511,57 +512,59 @@ class Assert {
         return ret;
     }
 
-    static register (name, def) {
+    static register (...args) {
         const A = this;
         const P = A.prototype;
-        const t = typeof name;
 
-        if (t === 'function') {
-            name.call(A, A, Util);
-            return;
-        }
+        for (let registry of args) {
+            if (typeof registry === 'function') {
+                registry.call(A, A, Util);
+                continue;
+            }
 
-        const registry = A.normalize((t === 'string') ? { [name]: def } : name);
+            registry = A.normalize(registry);
 
-        for (name in registry) {
-            def = registry[name];
+            for (let name of Object.keys(registry)) {
+                let def = registry[name];
+                let evaluate = def.evaluate && A.wrapAssertion(def);
+                let names = [name].concat(def.alias);
 
-            let fn = def.fn && A.wrapAssertion(def);
-            let names = [name].concat(def.alias);
+                for (let s of names) {
+                    let entry = A._getEntry(s, name);
+                    entry.add(def.after);
 
-            for (let s of names) {
-                let entry = A._getEntry(s, name);
-                entry.add(def.after);
+                    if (evaluate) {
+                        let was = entry.def;
 
-                if (fn) {
-                    let was = entry.def;
-
-                    if (was) {
-                        def.fn._super = was.fn;
-                        if (def.explain) {
-                            def.explain._super = was.explain || null;
+                        if (was) {
+                            def.evaluate._super = was.evaluate;
+                            if (def.explain) {
+                                def.explain._super = was.explain || null;
+                            }
                         }
+
+                        entry.def = def;
+                        entry.evaluate = evaluate;
+                        A._addFn(P, s, evaluate);
+                    }
+                    else {
+                        A._addModifier(P, s, name);
                     }
 
-                    entry.def = def;
-                    entry.fn = fn;
-                    A._addFn(P, s, fn);
-                }
-                else {
-                    A._addBit(P, s, name);
-                }
-
-                for (let b of def.before) {
-                    entry = A._getEntry(b);
-                    entry.add(s);
+                    for (let b of def.before) {
+                        entry = A._getEntry(b);
+                        entry.add(s);
+                    }
                 }
             }
         }
 
+        // Any modifiers we added that were just in befores/afters need to be
+        // wired up...
         let names = Object.keys(A.registry);
         for (let s of names) {
             if (s !== '$' && !Object.getOwnPropertyDescriptor(P, s)) {
-                A._addBit(P, s);
+                A._addModifier(P, s);
             }
         }
     }
@@ -652,23 +655,6 @@ class Assert {
         return this.constructor._getEntry(name, autoCreate);
     }
 
-    static _addBit (target, name, canonicalName) {
-        if (Object.getOwnPropertyDescriptor(target, name)) {
-            throw new Error(`Modifier "${name}" already defined`);
-        }
-
-        canonicalName = canonicalName || name;
-
-        Object.defineProperty(target, name, {
-            get () {
-                this._applyModifier(canonicalName);
-                return this;
-            }
-        });
-
-        return true;
-    }
-
     static _addFn (target, modifier, fn) {
         const A = this;
         const entry = A._getEntry(modifier, false);
@@ -690,12 +676,29 @@ class Assert {
 
                 let already = {};
                 entry.all.forEach(mod => {
-                    A._addModifier(bound, mod, already);
+                    A._decorate(bound, mod, already);
                 });
 
                 return bound;
             }
         });
+    }
+
+    static _addModifier (target, name, canonicalName) {
+        if (Object.getOwnPropertyDescriptor(target, name)) {
+            throw new Error(`Modifier "${name}" already defined`);
+        }
+
+        canonicalName = canonicalName || name;
+
+        Object.defineProperty(target, name, {
+            get () {
+                this._applyModifier(canonicalName);
+                return this;
+            }
+        });
+
+        return true;
     }
 
     /**
@@ -707,7 +710,7 @@ class Assert {
      * @param {Object} already The map of modifiers already applied to the `target`.
      * @private
      */
-    static _addModifier (target, modifier, already) {
+    static _decorate (target, modifier, already) {
         const A = this;
 
         if (!already[modifier]) {
@@ -717,16 +720,16 @@ class Assert {
             let entry = A._getEntry(modifier, false);
 
             // Check to see if this modifier is also an assertion method:
-            let fn = entry.fn;
+            let fn = entry.evaluate;
 
             if (fn) {
                 A._addFn(target, modifier, fn);
             }
             else {
-                A._addBit(target, modifier);
+                A._addModifier(target, modifier);
 
                 entry.all.forEach(mod => {
-                    A._addModifier(target, mod, already);
+                    A._decorate(target, mod, already);
                 });
             }
         }

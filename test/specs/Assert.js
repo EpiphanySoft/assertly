@@ -2597,7 +2597,7 @@ describe('Custom Assert', function () {
     CustomAssert.setup();
     CustomAssert.register({
         nan: {
-            fn: function fn (actual, expected) {
+            evaluate: function fn (actual, expected) {
                 let r = fn._super.call(this, actual, expected);
                 return r;
             },
@@ -2622,7 +2622,7 @@ describe('Custom Assert', function () {
 
     CustomAssert.register({
         christmas: {
-            fn (value) {
+            evaluate (value) {
                 let m = value.getMonth();
                 let d = value.getDate();
 
@@ -2748,7 +2748,6 @@ describe('Custom Assert', function () {
                 'failed',
                 'failure',
                 'finish',
-                'get',
                 'report',
                 'value'
             ]);
