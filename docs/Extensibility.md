@@ -12,48 +12,47 @@ modifiers and their sequence as well as the assertion functions.
 Consider this minimal form:
 
     Assert.register({
-        to: 'not',  // to.not is allowed
-        not: 'to'.  // not.to is allowed
+        to: true,  // simple modifiers
+        not: true,
 
         be (actual, expected) {
             // "actual" (arguments[0]) is the value passed to expect()
             // the rest of the arguments cme from the call to the assertion
-            // "this" is the Assert instance
+            // "this" is the Assert instance most commonly used to
+            // access _modifiers which is an object holding the modifiers
+            // to process (e.g., "this._modifiers.to").
 
             return actual === expected;
-        }
-    });
+        },
 
-The above modifiers (`to` and `not`) and assertion (`be`) have some special handling
-in the registration process.
-
- - Modifiers default to being allowed to start the dot-chain.
- - Assertions default to following after `be`.
- - The `be` assertion defaults to following after `to`.
- - Modifiers and asserts that follow `to` can also follow `not`.
-
-### Assertions
-
-With the basics in place, the following adds a new assertion (`throw`):
-
-    Assert.register({
-        'to.throw' (fn, type) {
+        throw (fn, type) {
             //...
         }
     });
 
-The `throw` assertion follows the `to` modifier (it would have defaulted to `be`). The
-above enables these assertions:
+The above registers two modifiers (`to` and `not`) and two assertions (`be` and
+`throw`).
+
+Given these, the following assertions can now be written:
+
+    expect(4).to.be(4);
+    expect(2).not.to.be(4);
+    expect(2).to.not.be(4);
 
     expect(fn).to.throw(type);
 
     expect(fn).not.to.throw(type);
     expect(fn).to.not.throw(type);
 
-The `this` pointer when an assertion is called in the `Assert` instance. The most
-likely property to use is the `_modifiers` object which hold the pieces of the dot-chain
-used to arrive at the assertion (this includes the modifiers and the assertion method
-itself).
+### Modifiers
+
+The registered modifiers (`to` and `not`) can be used in any order. Not all modifiers
+have meaning to all assertions and some (like `to`) are simply to make the assertion
+grammatically proper.
+
+Modifiers can be accessed by an assertion method using `this._modifiers`. This object
+holds the pieces of the dot-chain used to arrive at the assertion (this includes the
+modifiers and the assertion method itself).
 
 While one can access `this._modifiers.not` in the assertion method, this is not
 recommended. This is because the truth result returned will be toggled based on this
@@ -62,7 +61,7 @@ modifier and so is not needed in the truth test.
 When writing custom assertions, `Assert.Util` has some helpful [utility](./Utils.md)
 methods.
 
-#### Explaining Assertions
+### Explaining Assertions
 
 The default mechanism for generating explanatory text for an assert is acceptable in
 most cases. This is because it reads almost identically to the assertion in the code
@@ -136,60 +135,41 @@ For example:
 
     Expected 4 to be 2
 
-### Modifiers
-
-Modifiers are added in basically the same way as assertions:
-
-    Assert.register({
-        'to.randomly': true,
-
-        'to,randomly.throw' (fn, type) {
-            if (this.modifiers.randomly) {
-                //... hmmm
-            }
-            //...
-        }
-    });
-
-The above adds the (not very helpful) `randomly` modifier. The first key `to.randomly`
-allows `randomly` to follow the `to` modifier (by default it would belong at the start
-of the dot-chain). The second key defines the `throw` assertion and it can now be
-used after `to` or after `randomly`.
-
 ### Registry Keys
 
 As shown above, the keys of the registry object (the object passed to `register`) can
 contain some special syntactic forms.
 
-For a complete example:
+    thing,alt,other
+    \   / \       /
+     \_/   \_____/
+     name   aliases
 
-    foo,bar,zip.thing,alt,other.blerp,derp
-    \         / \   / \       / \        /
-     \_______/   \_/   \_____/   \______/
-      before    name   aliases    after
+The set of names can be comma-delimited. When this is done, the canonical name is
+the first name and the second and subsequent names are considered aliases.
 
-The key is first split on `'.'` (or alternatively `'|'` or `'/'` for readability).
 For example:
 
-    foo,bar,zip|thing,alt,other|blerp,derp
+    Assert.register({
+        'randomly,sporadically': true,
 
-    // or
+        throw (fn, type) {
+            if (this._modifiers.randomly) {
+                // well...
+            }
+            //...
+        }
+    });
 
-    foo,bar,zip/thing,alt,other/blerp,derp
+The above adds the (not very helpful) `randomly` modifier and an alias `sporadically`.
+The second key defines the `throw` assertion.
 
-If there is only one element, that element is the name and its possible alternate
-aliases.
+When using aliases, the `_modifiers` object will use the primary (canonical) name of
+the modifier, even if the alias is used in an assertion. For example:
 
-If there are two or more elements in the split, the first element is the **before**
-collection and the second is the name and aliases. The set of **before** values are
-those words that come _before_ the word being defined. As with 'to.randomly' above,
-the 'to' is a **before** for the word 'randomly'.
+    expect(fn).to.sporadically.throw();  // sets this._modifiers.randomly
 
-Only if there are three parts in the split does the **after** set come into play.
-This set is the names that can come _after_ this name.
-
-All sets of names can be comma-delimited. When this is applied to the primary name,
-the second and subsequent names are considered aliases.
+The `assertions` array, however, will contain the alias used in the assertion.
 
 ### Advanced Configuration
 
@@ -197,42 +177,65 @@ The value of each property in the registry object is often a simple value, but i
 full, normalized form is an object with the following properties:
 
  - `alias` - The array of alternate names (e.g. "a" and "an").
- - `after` - The array of names that come _after_ this name.
- - `before` - The array of names that come _before_ this name.
  - `evaluate` - The assertion `Function` that will return `true` for success.
  - `explain` - The `Function` that will return a string explaining the assertion.
+ - `get` - A method to call to get the property value.
+ - `invoke` - A method to call instead of an assertion.
 
 Rewriting the 'to.randomly' in normal form:
 
     Assert.register({
         randomly: {
-            before: ['to']
-        },
+            alias: ['sporadically'],
+        }
 
         throw: {
-            before: ['to', 'randomly'],
             evaluate (fn, type) {
                 if (this.modifiers.randomly) {
-                    //... hmmm
+                    //...
                 }
                 //...
             }
         }
     });
 
-Rewriting the complete example:
+#### Custom Getters
 
-    foo,bar,zip|thing,alt,other|blerp,derp
+At times it can be convenient for the property getter syntax to "navigate" from the
+base value assertion. Perhaps in a DOM assertion module one might want to say:
 
-Would look like this:
+    expect(el).firstChild.to.be.tag('div').
+        and.to.have.class('some-css-class');
+
+To implement a `firstChild` property like the above, a custom getter is needed:
 
     Assert.register({
-        thing: {
-            alias: ['alt', 'other' ],
-            before: ['foo', 'bar', 'zip']
-            after: ['blerp', 'derp']
+        firstChild: {
+            get () {
+                return new Assert(this.value.firstChild);
+            }
         }
     });
+
+When a property returns something for it is not tracked in the `_modifiers` set.
+
+#### Custom Methods
+
+Non-assertion, general purpose methods can be registered by setting the `invoke`
+option:
+
+    Assert.register({
+        down: {
+            invoke (selector) {
+                var c = this.value.querySelector(selector);
+                return new Assert(c);
+            }
+        }
+    });
+
+This would allow assertions like the following:
+
+    expect(el).down('div.foo').to.be.truthy();
 
 ## Adjusting The Defaults
 

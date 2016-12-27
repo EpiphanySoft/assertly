@@ -1214,8 +1214,10 @@ function masterSuite (A) {
 
     describe('get', function () {
         it('should return a new assertion', function () {
-            expect(0).to.be.not.truthy();
             let a = expect({a: 1}).get('a');
+            expect(a.value).to.be(1);
+
+            expect({a: 1}).get('a').to.be(1);
         });
 
         it('should not explode on undefined', function () {
@@ -2674,7 +2676,7 @@ describe('Custom Assert', function () {
 
     CustomAssert.setup();
     CustomAssert.register({
-        '$,to,be.firstChild': {
+        firstChild: {
             get () {
                 debugger;
                 let v = this.value;
@@ -2694,9 +2696,9 @@ describe('Custom Assert', function () {
             }
         },
 
-        'to,only/randomly': {},
+        'randomly,sporadically': true,
 
-        'to,only,randomly/explode' () {
+        explode () {
             let modifiers = this._modifiers;
             explodes = modifiers.randomly ? 'randomly' : 'always';
             if (modifiers.only) {
@@ -2817,6 +2819,13 @@ describe('Custom Assert', function () {
 
             expect(explodes).to.be('only always');
         });
+        //
+
+        it('should track canonical names of modifiers', function () {
+            let a = expect(0).to.only.sporadically;
+
+            expect(a._modifiers).to.flatly.equal({ to: true, only: true, randomly: true });
+        });
     });
 
     describe('Forbidden names', function () {
@@ -2858,7 +2867,7 @@ describe('Custom Assert', function () {
         it('should prevent registering invalid property', function () {
             expect(() => {
                 CustomAssert.register({
-                    'to._foo': true
+                    _foo: true
                 });
             }).to.throw(`Cannot register invalid name "_foo"`);
         });
