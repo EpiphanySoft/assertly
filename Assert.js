@@ -137,18 +137,7 @@ class Assert {
     }
 
     finish () {
-        let me = this;
-        let async = me._async;
-        let A = me.constructor;
-        let conjunction = {
-            and: new A(me.value, me)
-        };
-
-        if (async) {
-            conjunction.then = async.then.bind(async);
-        }
-
-        return conjunction;
+        return new this.constructor._Conjunction(this);
     }
 
     report () {
@@ -548,15 +537,15 @@ class Assert {
 
             for (let name of Object.keys(registry)) {
                 let def = registry[name];
-                let entry = A._getEntry(name, def);
+                let word = A._getWord(name, def);
 
-                entry.update(def);
+                word.update(def);
 
                 for (let s of def.alias) {
-                    A.registry[s] = entry;
+                    A.registry[s] = word;
 
-                    if (entry.fn) {
-                        A._addFn(P, s, entry.fn);
+                    if (word.fn) {
+                        A._addFn(P, s, word.fn);
                     }
                     else {
                         A._addModifier(P, s);
@@ -665,9 +654,24 @@ class Assert {
         }
     }
 
+    _doAssertion (word, expected) {
+        let me = this;
+
+        me.before(word);
+        me.begin(expected);
+        me.assertion();
+        me.report();
+
+        return me.finish();
+    }
+
+    _doInvoke (word, expected) {
+        return word.def.invoke(this.value, ...expected);
+    }
+
     static _addFn (target, modifier, fn) {
         const A = this;
-        const entry = A._getEntry(modifier);
+        const word = A._getWord(modifier);
 
         Object.defineProperty(target, modifier, {
             configurable: true,
@@ -678,16 +682,16 @@ class Assert {
                 };
 
                 let me = this.$me || this;
-                let from = this.$entry;
+                let from = this.$word;
                 let get = from && from.def.get;
 
                 if (get) {
                     me = get.call(me, me.value, from) || me;
                 }
 
-                bound.$entry = entry;
+                bound.$word = word;
                 bound.$me = me;
-                bound.$me._applyModifier(modifier, entry.track);
+                bound.$me._applyModifier(modifier, word.track);
 
                 for (let mod in A.registry) {
                     if (mod !== modifier) {
@@ -713,20 +717,20 @@ class Assert {
         }
 
         const A = this;
-        const entry = A._getEntry(name);
+        const word = A._getWord(name);
 
         Object.defineProperty(target, name, {
             get () {
                 let ret = this;
                 let me = ret.$me || ret;
-                let from = ret.$entry;
+                let from = ret.$word;
                 let get = from && from.def.get;
 
                 if (get) {
                     me = get.call(me, me.value, from) || me;
                 }
 
-                get = entry.def.get;
+                get = word.def.get;
                 if (get) {
                     let v = get.call(me, me.value);
 
@@ -743,7 +747,7 @@ class Assert {
         return true;
     }
 
-    static _getEntry (name, def) {
+    static _getWord (name, def) {
         if (name !== '$' && !Util.validNameRe.test(name)) {
             throw new Error(`Cannot register invalid name "${name}"`);
         }
@@ -753,6 +757,7 @@ class Assert {
         if (!A.hasOwnProperty('registry')) {
             A.registry = {};
             A.forbidden = {};
+            A._Conjunction = class extends A.Conjunction {};
 
             let names = [];
 
@@ -772,32 +777,46 @@ class Assert {
             }
         }
 
-        let entry = A.registry[name];
+        let word = A.registry[name];
 
-        if (!entry && def) {
+        if (!word && def) {
             if (A.forbidden[name]) {
                 throw new Error(`Cannot redefine "${name}"`);
             }
 
-            entry = new A.Entry(A, name, def);
+            word = new A.Word(A, name, def);
         }
 
-        return entry;
+        return word;
     }
 } // Assert
 
 Assert.Conjunction = class {
-    constructor (owner) {
-        this._owner = owner;
+    constructor (assertion) {
+        this._assertion = assertion;
+
+        let async = assertion._async;
+
+        if (async) {
+            this.then = async.then.bind(async);
+        }
+    }
+
+    get and () {
+        const a = this._assertion;
+        const A = a.constructor;
+
+        return new A(a.value, a);
     }
 };
 
-Assert.Entry = class {
+Assert.Word = class {
     constructor (A, name, def) {
         let me = this;
         let evaluate = def.evaluate && A.wrapAssertion(def);
         let invoke = def.invoke && A.wrapInvoke(def);
 
+        me.owner = A;
         me.name = name;
         me.def = def;
         me.fn = invoke || evaluate || null;
@@ -814,6 +833,67 @@ Assert.Entry = class {
         else {
             A._addModifier(A.prototype, name);
         }
+    }
+
+    define (target, name) {
+        const word = this;
+        const A = word.owner;
+
+        Object.defineProperty(target, name, {
+            get () {
+                let me = this;
+                let assertion = me.$me || me;
+                let def = word.def;
+                let evaluate = def.evaluate;
+                let invoke = def.invoke;
+                let from = me.$word;
+                let get = from && from.def.get;
+
+                if (get) {
+                    assertion = get.call(assertion, assertion.value, from) || assertion;
+                }
+
+                if (evaluate || invoke) {
+                    let bound = function (...args) {
+                        if (evaluate) {
+                            return assertion._doAssertion(word, args);
+                        }
+
+                        return assertion._doInvoke(word, args);
+                    };
+
+                    bound.$me = assertion;
+                    bound.$word = word;
+
+                    assertion._applyModifier(name, word.track);
+
+                    for (let mod in A.registry) {
+                        let w = A.registry[mod];
+
+                        // We can skip this word and its aliases...
+                        if (w !== word) {
+                            w.define(bound, mod);
+                        }
+                    }
+
+                    return bound;
+                }
+
+                // not a method...
+                get = word.def.get;
+
+                if (get) {
+                    let v = get.call(me, me.value);
+
+                    if (v) {
+                        return v;
+                    }
+                }
+
+                assertion._applyModifier(name, word.track);
+                return me;
+            }
+        });
     }
 
     update (def) {

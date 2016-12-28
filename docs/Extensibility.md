@@ -17,8 +17,8 @@ Consider this minimal form:
 
         be (actual, expected) {
             // "actual" (arguments[0]) is the value passed to expect()
-            // the rest of the arguments cme from the call to the assertion
-            // "this" is the Assert instance most commonly used to
+            // the rest of the arguments come from the call to the assertion
+            // "this" is the Assert instance. This is most commonly used to
             // access _modifiers which is an object holding the modifiers
             // to process (e.g., "this._modifiers.to").
 
@@ -182,7 +182,7 @@ full, normalized form is an object with the following properties:
  - `get` - A method to call to get the property value.
  - `invoke` - A method to call instead of an assertion.
 
-Rewriting the 'to.randomly' in normal form:
+Rewriting the above in normal form:
 
     Assert.register({
         randomly: {
@@ -206,8 +206,8 @@ property:
 
     Assert.register({
         down: {
-            invoke (selector) {
-                var c = this.value.querySelector(selector);
+            invoke (actual, selector) {
+                var c = actual.querySelector(selector);
                 return new Assert(c);
             }
         }
@@ -237,7 +237,8 @@ To implement a `firstChild` property like the above, a custom getter is needed:
         }
     });
 
-When a property returns something for it is not tracked in the `_modifiers` set.
+When a `get` function returns something, the modifier is not tracked in the
+`_modifiers` set.
 
 #### Custom Getters On Methods
 
