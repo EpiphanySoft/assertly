@@ -24,6 +24,16 @@ their use is not essential, it is, as mentioned, common practice. For example:
 IDE's and linters **rightly** warn that an expression like the above "has no side-effects"
 or "does nothing".
 
+# Installation
+
+To install using `npm`:
+
+    $ npm install assertly --save-dev
+
+To install using `yarn`:
+
+    $ yarn add assertly --dev
+
 # API
 
 The Assertly API is based on BDD-style expectations. For example:

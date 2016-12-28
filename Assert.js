@@ -38,7 +38,7 @@ class Assert {
 
         if (expected) {
             try {
-                let result = !me._word.def.evaluate.call(me, me.value, ...expected);
+                let result = !me._word.evaluate.call(me, me.value, ...expected);
 
                 me.failed = me._modifiers.not ? !result : result;
             }
@@ -113,7 +113,7 @@ class Assert {
 
     explain () {
         let me = this;
-        let fn = me._word.def.explain;
+        let fn = me._word.explain;
         let exp = me.expected;
         let n = exp.length;
 
@@ -604,7 +604,7 @@ class Assert {
 
         if (track !== false) {
             let modifiers = this._modifiers;
-            let name = state.def.name;
+            let name = state.name;
 
             if (!modifiers[name]) {
                 modifiers[name] = true;
@@ -625,7 +625,7 @@ class Assert {
     }
 
     _doInvoke (word, expected) {
-        return word.def.invoke.call(this, this.value, ...expected);
+        return word.invoke.call(this, this.value, ...expected);
     }
 
     static _getWord (name, def) {
@@ -693,7 +693,6 @@ Assert.Word = class {
 
         me.owner = A;
         me.name = name;
-        me.def = def;
         me.track = def.invoke ? !!def.track : (def.track !== false);
 
         me.define(name);
@@ -717,17 +716,16 @@ Assert.Word = class {
             get () {
                 let me = this;
                 let assertion = me.$me || me;
-                let def = word.def;
                 let from = me.$word;
-                let get = from && from.def.get;
+                let get = from && from.get;
 
                 if (get) {
                     assertion = get.call(assertion, assertion.value) || assertion;
                 }
 
-                if (def.evaluate || def.invoke) {
+                if (word.evaluate || word.invoke) {
                     let bound = function (...args) {
-                        if (def.evaluate) {
+                        if (word.evaluate) {
                             return assertion._doAssert(word, args);
                         }
 
@@ -753,7 +751,7 @@ Assert.Word = class {
 
                 // just a modifier...
 
-                get = word.def.get;
+                get = word.get;
 
                 if (get) {
                     let v = get.call(assertion, assertion.value);
@@ -773,14 +771,14 @@ Assert.Word = class {
         const word = this;
         const A = word.owner;
         const C = A._Conjunction;
-        const next = word.def.next;
+        const next = word.next;
 
         if (next) {
             if (next.length > 1) {
                 C.prototype[name] = function (...args) {
                     let me = this._assertion; // "this" is the Conjunction
 
-                    return word.def.next.call(me, me.value, ...args);
+                    return word.next.call(me, me.value, ...args);
                 };
             }
             else {
@@ -788,35 +786,43 @@ Assert.Word = class {
                     get () {
                         let me = this._assertion; // "this" is the Conjunction
 
-                        return word.def.next.call(me, me.value);
+                        return word.next.call(me, me.value);
                     }
                 });
             }
         }
     }
 
+    set (def, name) {
+        let value = def[name];
+
+        if (value) {
+            let me = this;
+            let was = me[name];
+
+            if (was && was !== value) {
+                value._super = was;
+            }
+
+            me[name] = value;
+        }
+    }
+
     update (def) {
         let me = this;
-        let was = me.def;
 
-        if (was && was !== def) {
-            let evaluate = def.evaluate;
-            let invoke = def.invoke;
+        if ((def.invoke || me.invoke) && (def.evaluate || me.evaluate)) {
+            throw new Error(`Cannot provide both evaluate and invoke functions`);
+        }
 
-            if (invoke) {
-                invoke._super = was.invoke;
-            }
-            else if (evaluate) {
-                evaluate._super = was.evaluate;
+        me.set(def, 'evaluate');
+        me.set(def, 'explain');
+        me.set(def, 'get');
+        me.set(def, 'invoke');
+        me.set(def, 'next');
 
-                if (def.explain) {
-                    def.explain._super = was.explain || null;
-                }
-            }
-
-            if (def.get) {
-                def.get._super = was.get || null;
-            }
+        if ('track' in def) {
+            me.track = def.track;
         }
 
         for (let s of def.alias) {

@@ -2680,7 +2680,13 @@ describe('Custom Assert', function () {
     const failureLog = [];
     const reportLog = [];
     let childGetterCalled;
+    let nanCalledEval, nanCalledExplain;
     let explodes;
+
+    beforeEach(function () {
+        childGetterCalled = failureLog.length = reportLog.length = explodes = 0;
+        nanCalledEval = nanCalledExplain = 0;
+    });
 
     class CustomAssert extends Assert {
         static report (assertion) {
@@ -2693,6 +2699,8 @@ describe('Custom Assert', function () {
             super.reportFailure(msg, assertion);
         }
     }
+
+    const expect = CustomAssert.expect.bind(CustomAssert);
 
     CustomAssert.setup();
     CustomAssert.register({
@@ -2724,13 +2732,15 @@ describe('Custom Assert', function () {
             }
         },
 
-        nan: {
+        NaN: {
             evaluate: function fn (actual, expected) {
+                ++nanCalledEval;
                 let r = fn._super.call(this, actual, expected);
                 return r;
             },
 
             explain: function fn (actual, expected) {
+                ++nanCalledExplain;
                 let r = fn._super.call(this, actual, expected);
                 return r;
             }
@@ -2775,12 +2785,6 @@ describe('Custom Assert', function () {
                 return `Expected Christmas ${not}to be Christmas`;
             }
         }
-    });
-
-    const expect = CustomAssert.expect.bind(CustomAssert);
-
-    afterEach(function () {
-        childGetterCalled = failureLog.length = reportLog.length = explodes = 0;
     });
 
     masterSuite(CustomAssert);
@@ -2862,6 +2866,13 @@ describe('Custom Assert', function () {
             let a = expect(0).to.only.sporadically;
 
             expect(a._modifiers).to.flatly.equal({ to: true, only: true, randomly: true });
+        });
+
+        it('should be able to replace and call through', function () {
+            expect(NaN).to.be.NaN();
+            expect(NaN).to.be.nan();
+
+            expect(nanCalledEval).to.be(2);
         });
     });
 
