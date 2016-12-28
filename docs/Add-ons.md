@@ -25,6 +25,10 @@ For example:
 On Step 2, the exact exported method may differ but `init` is the recommended
 method to export for add-ons.
 
+## Known Add-ons
+
+ - [assertly-sinon](https://github.com/dongryphon/assertly-sinon) [npm](https://www.npmjs.com/package/assertly-sinon)
+
 ## Writing An Add-On
 
 The signature of the initializer method is shown in the following simple add-on
