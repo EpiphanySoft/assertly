@@ -38,7 +38,7 @@ class Assert {
 
         if (expected) {
             try {
-                let result = !me._def.evaluate.call(me, me.value, ...expected);
+                let result = !me._word.def.evaluate.call(me, me.value, ...expected);
 
                 me.failed = me._modifiers.not ? !result : result;
             }
@@ -48,8 +48,8 @@ class Assert {
         }
     }
 
-    before (def) {
-        this._def = def;
+    before (word) {
+        this._word = word;
     }
 
     begin (expected) {
@@ -113,8 +113,7 @@ class Assert {
 
     explain () {
         let me = this;
-        let def = me._def;
-        let fn = def.explain;
+        let fn = me._word.def.explain;
         let exp = me.expected;
         let n = exp.length;
 
@@ -525,7 +524,6 @@ class Assert {
 
     static register (...args) {
         const A = this;
-        const P = A.prototype;
 
         for (let registry of args) {
             if (typeof registry === 'function') {
@@ -540,17 +538,6 @@ class Assert {
                 let word = A._getWord(name, def);
 
                 word.update(def);
-
-                for (let s of def.alias) {
-                    A.registry[s] = word;
-
-                    if (word.fn) {
-                        A._addFn(P, s, word.fn);
-                    }
-                    else {
-                        A._addModifier(P, s);
-                    }
-                }
             }
         }
     }
@@ -592,7 +579,6 @@ class Assert {
     }
 
     static reportFailure (msg) {
-        //console.error(msg);
         throw new Error(msg);
     }
 
@@ -600,33 +586,6 @@ class Assert {
         let registry = this.getDefaults();
 
         this.register(registry);
-    }
-
-    static wrapAssertion (def) {
-        let wrap = function (...expected) {
-            let me = this;
-
-            me.before(def);
-            me.begin(expected);
-            me.assertion();
-            me.report();
-
-            return me.finish();
-        };
-
-        wrap.def = def;
-
-        return wrap;
-    }
-
-    static wrapInvoke (def) {
-        let wrap = function (...expected) {
-            return def.invoke(this.value, ...expected);
-        };
-
-        wrap.def = def;
-
-        return wrap;
     }
 
     //-----------------------------------------------------------------------
@@ -654,7 +613,7 @@ class Assert {
         }
     }
 
-    _doAssertion (word, expected) {
+    _doAssert (word, expected) {
         let me = this;
 
         me.before(word);
@@ -666,92 +625,10 @@ class Assert {
     }
 
     _doInvoke (word, expected) {
-        return word.def.invoke(this.value, ...expected);
-    }
-
-    static _addFn (target, modifier, fn) {
-        const A = this;
-        const word = A._getWord(modifier);
-
-        Object.defineProperty(target, modifier, {
-            configurable: true,
-
-            get () {
-                let bound = function (...args) {
-                    return fn.apply(bound.$me, args);
-                };
-
-                let me = this.$me || this;
-                let from = this.$word;
-                let get = from && from.def.get;
-
-                if (get) {
-                    me = get.call(me, me.value, from) || me;
-                }
-
-                bound.$word = word;
-                bound.$me = me;
-                bound.$me._applyModifier(modifier, word.track);
-
-                for (let mod in A.registry) {
-                    if (mod !== modifier) {
-                        let fn = A.registry[mod].fn;
-
-                        if (fn) {
-                            A._addFn(bound, mod, fn);
-                        }
-                        else {
-                            A._addModifier(bound, mod);
-                        }
-                    }
-                }
-
-                return bound;
-            }
-        });
-    }
-
-    static _addModifier (target, name) {
-        if (Object.getOwnPropertyDescriptor(target, name)) {
-            throw new Error(`Modifier "${name}" already defined`);
-        }
-
-        const A = this;
-        const word = A._getWord(name);
-
-        Object.defineProperty(target, name, {
-            get () {
-                let ret = this;
-                let me = ret.$me || ret;
-                let from = ret.$word;
-                let get = from && from.def.get;
-
-                if (get) {
-                    me = get.call(me, me.value, from) || me;
-                }
-
-                get = word.def.get;
-                if (get) {
-                    let v = get.call(me, me.value);
-
-                    if (v) {
-                        return v;
-                    }
-                }
-
-                me._applyModifier(name);
-                return ret;
-            }
-        });
-
-        return true;
+        return word.def.invoke.call(this, this.value, ...expected);
     }
 
     static _getWord (name, def) {
-        if (name !== '$' && !Util.validNameRe.test(name)) {
-            throw new Error(`Cannot register invalid name "${name}"`);
-        }
-
         let A = this;
 
         if (!A.hasOwnProperty('registry')) {
@@ -813,50 +690,45 @@ Assert.Conjunction = class {
 Assert.Word = class {
     constructor (A, name, def) {
         let me = this;
-        let evaluate = def.evaluate && A.wrapAssertion(def);
-        let invoke = def.invoke && A.wrapInvoke(def);
 
         me.owner = A;
         me.name = name;
         me.def = def;
-        me.fn = invoke || evaluate || null;
+        me.track = def.invoke ? !!def.track : (def.track !== false);
 
-        if (invoke) {
-            me.track = !!def.track;
-        }
-
-        A.registry[name] = me;
-
-        if (me.fn) {
-            A._addFn(A.prototype, name, me.fn);
-        }
-        else {
-            A._addModifier(A.prototype, name);
-        }
+        me.define(name);
+        me.defineConjunction(name);
     }
 
-    define (target, name) {
+    define (name, target) {
+        if (!Util.validNameRe.test(name)) {
+            throw new Error(`Cannot register invalid name "${name}"`);
+        }
+
         const word = this;
         const A = word.owner;
+
+        if (!target) {
+            target = A.prototype;
+            A.registry[name] = word;
+        }
 
         Object.defineProperty(target, name, {
             get () {
                 let me = this;
                 let assertion = me.$me || me;
                 let def = word.def;
-                let evaluate = def.evaluate;
-                let invoke = def.invoke;
                 let from = me.$word;
                 let get = from && from.def.get;
 
                 if (get) {
-                    assertion = get.call(assertion, assertion.value, from) || assertion;
+                    assertion = get.call(assertion, assertion.value) || assertion;
                 }
 
-                if (evaluate || invoke) {
+                if (def.evaluate || def.invoke) {
                     let bound = function (...args) {
-                        if (evaluate) {
-                            return assertion._doAssertion(word, args);
+                        if (def.evaluate) {
+                            return assertion._doAssert(word, args);
                         }
 
                         return assertion._doInvoke(word, args);
@@ -872,18 +744,19 @@ Assert.Word = class {
 
                         // We can skip this word and its aliases...
                         if (w !== word) {
-                            w.define(bound, mod);
+                            w.define(mod, bound);
                         }
                     }
 
                     return bound;
                 }
 
-                // not a method...
+                // just a modifier...
+
                 get = word.def.get;
 
                 if (get) {
-                    let v = get.call(me, me.value);
+                    let v = get.call(assertion, assertion.value);
 
                     if (v) {
                         return v;
@@ -894,6 +767,32 @@ Assert.Word = class {
                 return me;
             }
         });
+    }
+
+    defineConjunction (name) {
+        const word = this;
+        const A = word.owner;
+        const C = A._Conjunction;
+        const next = word.def.next;
+
+        if (next) {
+            if (next.length > 1) {
+                C.prototype[name] = function (...args) {
+                    let me = this._assertion; // "this" is the Conjunction
+
+                    return word.def.next.call(me, me.value, ...args);
+                };
+            }
+            else {
+                Object.defineProperty(C.prototype, name, {
+                    get () {
+                        let me = this._assertion; // "this" is the Conjunction
+
+                        return word.def.next.call(me, me.value);
+                    }
+                });
+            }
+        }
     }
 
     update (def) {
@@ -919,6 +818,11 @@ Assert.Word = class {
                 def.get._super = was.get || null;
             }
         }
+
+        for (let s of def.alias) {
+            me.define(s);
+            me.defineConjunction(s);
+        }
     }
 };
 
@@ -928,7 +832,7 @@ Assert.Promise = (typeof Promise !== 'undefined') && Promise.resolve && Promise;
 // names:
 Object.assign(Assert.prototype, {
     _async: null,
-    _def: null,
+    _word: null,
 
     actual: null,
     assertions: null,

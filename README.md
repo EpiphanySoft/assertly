@@ -124,3 +124,14 @@ but do not evaluate truth claims. Instead they perform some more general operati
 Assertly provides these methods:
 
  - [`get`](docs/get.md)
+
+## Conjunctions
+
+A conjunction is a word that can be used to create a new `Assert` instance based on
+a previous instance.
+
+For example:
+
+    expect(x).to.be.above(2).and.below(10);
+
+Assertly defines `and` by default.

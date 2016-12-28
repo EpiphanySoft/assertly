@@ -683,92 +683,108 @@ function masterSuite (A) {
 
             expect(3).to.not.be(2).and.not.be.within(5, 10);
         });
+
+        it('should work allow assertions immediately', function () {
+            expect(4).to.be.above(2).and.below(10);
+
+            expect(() => {
+                expect(0).to.be.above(2).and.below(10);
+            }).
+            to.throw(`Expected 0 to be above 2`);
+
+            expect(() => {
+                expect(20).to.be.above(2).and.below(10);
+            }).
+            to.throw(`Expected 20 below 10`);
+        });
     });
 
-    describe('approximately', function () {
-        it('should match on exact numbers', function () {
-            expect(2).to.be.approximately(2);
+    ['approx', 'approximately'].forEach(function (approx) {
+        describe(approx, function () {
+            it('should match on exact numbers', function () {
+                expect(2).to.be[approx](2);
 
-            try {
-                expect(2).to.not.be.approximately(2);
-            }
-            catch (e) {
-                expect(e.message).to.be(`Expected 2 to not be 2 ± 0.001`);
-            }
-        });
+                try {
+                    expect(2).to.not.be[approx](2);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected 2 to not be 2 ± 0.001`);
+                }
+            });
 
-        it('should match greater but close numbers', function () {
-            expect(2.001).to.be.approximately(2);
+            it('should match greater but close numbers', function () {
+                expect(2.001).to.be[approx](2);
 
-            try {
-                expect(2.001).to.not.be.approximately(2);
-            }
-            catch (e) {
-                expect(e.message).to.be(`Expected 2.001 to not be 2 ± 0.001`);
-            }
-        });
+                try {
+                    expect(2.001).to.not.be[approx](2);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected 2.001 to not be 2 ± 0.001`);
+                }
+            });
 
-        it('should match lesser but close numbers', function () {
-            expect(1.999).to.be.approximately(2);
+            it('should match lesser but close numbers', function () {
+                expect(1.999).to.be[approx](2);
 
-            try {
-                expect(1.999).to.not.be.approximately(2);
-            }
-            catch (e) {
-                expect(e.message).to.be(`Expected 1.999 to not be 2 ± 0.001`);
-            }
-        });
+                try {
+                    expect(1.999).to.not.be[approx](2);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected 1.999 to not be 2 ± 0.001`);
+                }
+            });
 
-        it('should reject more distant greater numbers', function () {
-            expect(2.0011).not.to.be.approximately(2);
+            it('should reject more distant greater numbers', function () {
+                expect(2.0011).not.to.be[approx](2);
 
-            try {
-                expect(2.0011).to.be.approximately(2);
-            }
-            catch (e) {
-                expect(e.message).to.be(`Expected 2.0011 to be 2 ± 0.001`);
-            }
-        });
+                try {
+                    expect(2.0011).to.be[approx](2);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected 2.0011 to be 2 ± 0.001`);
+                }
+            });
 
-        it('should reject more distant lesser numbers', function () {
-            expect(1.9989).not.to.be.approximately(2);
+            it('should reject more distant lesser numbers', function () {
+                expect(1.9989).not.to.be[approx](2);
 
-            try {
-                expect(1.9989).to.be.approximately(2);
-            }
-            catch (e) {
-                expect(e.message).to.be(`Expected 1.9989 to be 2 ± 0.001`);
-            }
-        });
+                try {
+                    expect(1.9989).to.be[approx](2);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected 1.9989 to be 2 ± 0.001`);
+                }
+            });
 
-        it('should work for negative numbers', function () {
-            expect(-2).to.be.approximately(-2);
-            expect(-2.0011).not.to.be.approximately(-2);
-            expect(-1.999).to.be.approximately(-2);
+            it('should work for negative numbers', function () {
+                expect(-2).to.be[approx](-2);
+                expect(-2.0011).not.to.be[approx](-2);
+                expect(-1.999).to.be[approx](-2);
 
-            try {
-                expect(-2).to.not.be.approximately(-2);
-            }
-            catch (e) {
-                expect(e.message).to.be(`Expected -2 to not be -2 ± 0.001`);
-            }
-        });
+                try {
+                    expect(-2).to.not.be[approx](-2);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected -2 to not be -2 ± 0.001`);
+                }
+            });
 
-        it('should accept explicit epsilon values', function () {
-            expect(2.0011).to.be.approximately(2, 0.1);
+            it('should accept explicit epsilon values', function () {
+                expect(2.0011).to.be[approx](2, 0.1);
 
-            try {
-                expect(2.0011).to.not.be.approximately(2, 0.1);
-            }
-            catch (e) {
-                expect(e.message).to.be(`Expected 2.0011 to not be 2 ± 0.1`);
-            }
-        });
+                try {
+                    expect(2.0011).to.not.be[approx](2, 0.1);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected 2.0011 to not be 2 ± 0.1`);
+                }
+            });
 
-        it('should reject non-numbers', function () {
-            expect(() => {
-                expect('x').to.be.approx(2);
-            }).to.throw(`Expected 'x' to be a number`);
+            it('should reject non-numbers', function () {
+                expect(() => {
+                    expect('x').to.be[approx](2);
+                }).to.throw(`Expected 'x' to be a number`);
+            });
         });
     });
 
@@ -2680,6 +2696,18 @@ describe('Custom Assert', function () {
 
     CustomAssert.setup();
     CustomAssert.register({
+        afterwardly: {
+            next (value, multiple) {
+                return new CustomAssert(value * multiple, this);
+            }
+        },
+
+        afterwards: {
+            next (value) {
+                return new CustomAssert(value, this);
+            }
+        },
+
         child: {
             get (item) {
                 childGetterCalled = true;
@@ -2829,7 +2857,6 @@ describe('Custom Assert', function () {
 
             expect(explodes).to.be('only always');
         });
-        //
 
         it('should track canonical names of modifiers', function () {
             let a = expect(0).to.only.sporadically;
@@ -2928,6 +2955,16 @@ describe('Custom Assert', function () {
             expect(childGetterCalled).to.be.falsy();
             expect(o).child.to.be(c);
             expect(childGetterCalled).to.be.truthy();
+        });
+    });
+
+    describe('Conjunctions', function () {
+        it('should support conjunctive properties', function () {
+            expect(2).to.be(2).afterwards.to.be(2);
+        });
+
+        it('should support conjunctive methods', function () {
+            expect(2).to.be(2).afterwardly(2).to.be(4);
         });
     });
 });

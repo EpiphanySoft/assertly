@@ -171,7 +171,7 @@ the modifier, even if the alias is used in an assertion. For example:
 
 The `assertions` array, however, will contain the alias used in the assertion.
 
-### Advanced Configuration
+## Advanced Configuration
 
 The value of each property in the registry object is often a simple value, but its
 full, normalized form is an object with the following properties:
@@ -199,7 +199,7 @@ Rewriting the above in normal form:
         }
     });
 
-#### Custom Methods
+### Custom Methods
 
 Non-assertion, general purpose methods can be registered by setting the `invoke`
 property:
@@ -219,7 +219,7 @@ This would allow assertions like the following:
 
 It is illegal to combine `invoke` and `evaluate` in the same definition.
 
-#### Custom Getters
+### Custom Getters
 
 At times it can be convenient for the property getter syntax to "navigate" from the
 base value assertion. Perhaps in a DOM assertion module one might want to say:
@@ -240,7 +240,7 @@ To implement a `firstChild` property like the above, a custom getter is needed:
 When a `get` function returns something, the modifier is not tracked in the
 `_modifiers` set.
 
-#### Custom Getters On Methods
+### Combining Getters And Methods
 
 When a method or assertion also has a `get` defined, the timing is a bit different
 to allow the code to either execute the method or descend further down the dot-path.
@@ -277,6 +277,46 @@ eventual assertion method.
 
 While the above example relates to the `evaluate` function, the same applies to the
 `invoke` function as well.
+
+### Custom Conjunctions
+
+By default, the `and` conjunction allows assertions to be conveniently chained and
+the "actual" value passed forward:
+
+    expect(x).to.be.above(10).and.below(20);
+
+To define a custom conjunction, you can implement a `next` method. The following
+example implements an `also` conjunction that works in the same way as `and`:
+
+    Assert.register({
+        also: {
+            next (value) {
+                // We get the actual value and the Assert instance (as "this")
+                return new Assert(value, this);
+            }
+        }
+    });
+
+With the above, the following assertion can be used:
+
+    expect(x).to.be.above(10).also.to.be.below(20);
+
+A conjunction can take more arguments then the actual `value` if needed:
+
+    Assert.register({
+        also: {
+            multiplied (value, by) {
+                return new Assert(value * by, this);
+            }
+        }
+    });
+
+With the above, the following assertion can be used:
+
+    expect(x).to.be.above(10).multiplied(3).to.be.below(20);
+
+When a conjunction declares more arguments the the `value` it must always be called
+when used. Its name alone will only return the conjunction method.
 
 ## Adjusting The Defaults
 
