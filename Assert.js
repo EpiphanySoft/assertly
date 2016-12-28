@@ -632,7 +632,7 @@ class Assert {
         let A = this;
 
         if (!A.hasOwnProperty('registry')) {
-            A.registry = {};
+            A.registry = new Empty();
             A.forbidden = {};
             A._Conjunction = class extends A.Conjunction {};
 
@@ -1023,7 +1023,7 @@ const Util = Assert.Util = {
     },
 
     _typeOf: {
-        cache: {},
+        cache: new Empty(),
         toStringRe: /^\[object ([^\]]+)]$/,
         useTypeOfRe: /booolean|number|string|undefined/
     }
