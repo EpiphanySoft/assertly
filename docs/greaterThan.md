@@ -1,3 +1,7 @@
+### greaterThan (aka: "above", "gt")
+
+ - to[.not].be.greaterThan
+
 The `greaterThan` assertion compares values using `>`.
 
 For example:

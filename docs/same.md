@@ -1,3 +1,7 @@
+### same
+
+ - to[.not].be.same
+
 The `same` assertion compares the `actual` and `expected` values much like `equal` in
 that array elements and object properties are compared recursively. The difference is
 that while `equal` uses the `==` operator (and hence allows for type conversions), the

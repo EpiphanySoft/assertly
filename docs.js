@@ -11,77 +11,50 @@ let keys = Object.keys(entries);
 
 keys.sort();
 
-let paths = {};
+let canon = keys.filter(key => !entries[key].fn || key === entries[key].name);
 
-let canon = keys.filter(key => key !== '$' &&
-        (!entries[key].fn || key === entries[key].canonicalName));
+// console.log(`paths[${paths.length}] = `, paths);
 
-function buildPath (path, modifier, state) {
-    if (state[modifier]) {
-        return;
+function logInfo (name) {
+    let aliases = keys.filter(k => k !== name && name === entries[k].name);
+
+    if (aliases.length) {
+        aliases.sort();
+        aliases = ` (aka: "${aliases.join('", "')}")`;
+    }
+    else {
+        aliases = '';
     }
 
-    state[modifier] = true;
+    console.log(` - [\`${name}\`](docs/${name}.md)${aliases}`);
 
-    if (path) {
-        path += '.';
+    let path = $path.join(__dirname, `docs/${name}.md`);
+    let md = 'TODO';
+
+    try {
+        $fs.readFileSync(path);
     }
-    path += modifier;
-
-    let entry = entries[modifier];
-
-    if (entry.fn && canon.indexOf(modifier) > -1) {
-        // console.log(path);
-        paths[path] = true;
+    catch (e) {
+        $fs.writeFileSync(path, `# ${name}\n\nTODO`);
     }
-
-    for (let name of entry.all) {
-        buildPath(path, name, state);
-    }
-
-    state[modifier] = false;
 }
 
-// entries.$.all.forEach(modifier => {
-//     buildPath('', modifier, {});
-// });
-
-entries.to.all.forEach(modifier => {
-    buildPath('to[.not]', modifier, { not: true });
-});
-
-paths = Object.keys(paths);
-// console.log(`paths[${paths.length}] = `, paths);
+console.log('## Assertions\n');
 
 canon.forEach(name => {
     const entry = entries[name];
 
-    if (entry.fn && entry.canonicalName === name) {
-        let aliases = keys.filter(k => k !== name && entries[k].canonicalName === name);
+    if (entry.def.evaluate && name === entry.def.name) {
+        logInfo(name);
+    }
+});
 
-        if (aliases.length) {
-            aliases.sort();
-            aliases = ` (aka: "${aliases.join('", "')}")`;
-        }
-        else {
-            aliases = '';
-        }
+console.log('\n## Methods\n');
 
-        console.log(`### ${name}${aliases}\n`);
+canon.forEach(name => {
+    const entry = entries[name];
 
-        let forms = paths.filter(p => p.endsWith('.' + name));
-        console.log(` - ${forms.join('\n - ')}\n`);
-
-        let path = $path.join(__dirname, `docs/${name}.md`);
-        let md = 'TODO';
-
-        try {
-            md = $fs.readFileSync(path);
-        }
-        catch (e) {
-            $fs.writeFileSync(path, md);
-        }
-
-        console.log(md + '\n');
+    if (entry.def.invoke && name === entry.def.name) {
+        logInfo(name);
     }
 });

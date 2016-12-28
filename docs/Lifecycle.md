@@ -56,7 +56,6 @@ instance is passed to the `Assert.report()` static method. See
 In the act of generating the explanation, several other properties are set:
 
  - `actual` - A string with the printed (`Assert.print`) `value`.
- - `assertions` - A String[] of the modifiers followed by the assertion.
  - `expectation` - A string with the printed (`Assert.print`) `expected`.
 
 These are primarily of interest when writing custom assertions. See

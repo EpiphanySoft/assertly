@@ -1,3 +1,12 @@
+### property
+
+ - to[.not].only.have.own.property
+ - to[.not].only.have.property
+ - to[.not].have.own.property
+ - to[.not].have.only.own.property
+ - to[.not].have.only.property
+ - to[.not].have.property
+
 The `property` assertion is very similar to the `key`/`keys` assertion. The difference
 being that while `keys` can check for the presence of multiple properties, this assertion
 instead can check that a property has a particular value.

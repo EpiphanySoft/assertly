@@ -5,6 +5,9 @@ const inspect = require(isNode ? 'util' : './inspect').inspect;
 const arraySlice = Array.prototype.slice;
 const toString = Object.prototype.toString;
 
+function Empty () {}
+Empty.prototype = Object.create(null);
+
 /**
  * @class Assert
  */
@@ -16,16 +19,16 @@ class Assert {
 
     constructor (value, previous) {
         let me = this;
+        let A = me.constructor;
 
+        me.assertions = [];
         me.value = value;
 
-        me._modifiers = {};
+        me._modifiers = new Empty();
         me._previous = previous || null;
-        me._state = me._getEntry('$', false);
 
-        if (!me._state) {
-            me.constructor.setup();
-            me._state = me._getEntry('$');
+        if (!A.hasOwnProperty('registry')) {
+            A.setup();
         }
     }
 
@@ -35,7 +38,7 @@ class Assert {
 
         if (expected) {
             try {
-                let result = !me._def.evaluate.call(me, me.value, ...expected);
+                let result = !me._word.def.evaluate.call(me, me.value, ...expected);
 
                 me.failed = me._modifiers.not ? !result : result;
             }
@@ -45,8 +48,8 @@ class Assert {
         }
     }
 
-    before (def) {
-        this._def = def;
+    before (word) {
+        this._word = word;
     }
 
     begin (expected) {
@@ -110,8 +113,7 @@ class Assert {
 
     explain () {
         let me = this;
-        let def = me._def;
-        let fn = def.explain;
+        let fn = me._word.def.explain;
         let exp = me.expected;
         let n = exp.length;
 
@@ -120,36 +122,21 @@ class Assert {
         me.actual = A.print(me.value);
         me.expectation = me.expectation || (n ? A.print(n === 1 ? exp[0] : exp) : '');
 
-        let mods = Object.keys(me._modifiers);
-
-        me.assertions = mods;
-
         let ret = fn && fn.call(me, me.value, ...exp);
 
         if (!ret) {
-            if (me.expectation) {
-                mods.push(me.expectation);
-            }
+            ret = `Expected ${me.actual} ${me.assertions.join(' ')}`;
 
-            ret = `Expected ${me.actual} ${mods.join(' ')}`;
+            if (me.expectation) {
+                ret += ' ' + me.expectation;
+            }
         }
 
         return ret;
     }
 
     finish () {
-        let me = this;
-        let async = me._async;
-        let A = me.constructor;
-        let conjunction = {
-            and: new A(me.value, me)
-        };
-
-        if (async) {
-            conjunction.then = async.then.bind(async);
-        }
-
-        return conjunction;
+        return new this.constructor._Conjunction(this);
     }
 
     report () {
@@ -169,11 +156,11 @@ class Assert {
         const A = this;
 
         return this.normalize({
-            not: 'to',
-            to:  'not',
-
-            'to.only': ['have', 'own'],
-            'to.have': ['own', 'only'],
+            to: true,
+            not: true,
+            only: true,
+            have: true,
+            own: true,
 
             'a,an': {
                 evaluate (actual, expected) {
@@ -222,7 +209,7 @@ class Assert {
                 return actual === expected;
             },
 
-            'to.contain' (actual, expected, at) {
+            contain (actual, expected, at) {
                 let i = actual.indexOf(expected);
                 if (at != null) {
                     return i === at;
@@ -253,18 +240,28 @@ class Assert {
                 return ret;
             },
 
-            'to.equal' (actual, expected) {
-                return Util.isEqual(actual, expected);
+            equal (actual, expected) {
+                if (this._modifiers.flatly && expected && typeof expected === 'object') {
+                    this.expected[0] = expected = Util.copy({}, expected);
+                }
+                return Util.isEqual(actual, expected, false);
             },
 
-            'falsy' (actual) {
+            falsy (actual) {
                 return !actual;
             },
 
-            '.get': {
-                exec () {
-                    debugger;
-                    return 42;
+            flatly: {
+                get (value) {
+                    if (value && typeof value === 'object') {
+                        this.value = Util.copy({}, value);
+                    }
+                }
+            },
+
+            get: {
+                invoke (value, name) {
+                    return new A(value && value[name]);
                 }
             },
 
@@ -280,7 +277,7 @@ class Assert {
                 return set.indexOf(actual) > -1;
             },
 
-            'have,own,only/key,keys' (actual, ...expected) {
+            'key,keys' (actual, ...expected) {
                 let ok = true;
                 let only = this._modifiers.only;
                 let own = this._modifiers.own;
@@ -310,12 +307,15 @@ class Assert {
                 return ok;
             },
 
-            'have.length' (actual, expected) {
-                let len = actual ? actual.length : NaN;
-                if (isNaN(len)) {
-                    return false;
+            length: {
+                evaluate (actual, expected) {
+                    let len = actual ? actual.length : NaN;
+                    return len === expected;
+                },
+                get () {
+                    let v = this.value;
+                    this.value = v ? v.length : NaN;
                 }
-                return len === expected;
             },
 
             'lessThan,lt,below' (actual, expected) {
@@ -326,11 +326,11 @@ class Assert {
                 return actual <= expected;
             },
 
-            'to.match' (actual, expected) {
+            match (actual, expected) {
                 return expected.test(String(actual));
             },
 
-            'nan,NaN': {
+            'NaN,nan': {
                 evaluate (actual) {
                     return isNaN(actual);
                 },
@@ -342,7 +342,7 @@ class Assert {
                 }
             },
 
-            'have,only,own|property': {
+            property: {
                 evaluate (object, property, value) {
                     let only = this._modifiers.only;
                     //TODO deep properties "foo.bar.baz"
@@ -385,6 +385,9 @@ class Assert {
 
             same: {
                 evaluate (actual, expected) {
+                    if (this._modifiers.flatly && expected && typeof expected === 'object') {
+                        this.expected[0] = expected = Util.copy({}, expected);
+                    }
                     return Util.isEqual(actual, expected, true);
                 },
                 explain () {
@@ -395,25 +398,60 @@ class Assert {
                 }
             },
 
-            'to.throw' (fn, type) {
-                let msg, ok = false;
+            throw: {
+                evaluate (fn, type) {
+                    let msg, ok = false;
 
-                try {
-                    fn();
-                }
-                catch (e) {
-                    ok = true;
-                    msg = e.message;
-
-                    if (typeof type === 'string') {
-                        ok = (msg.indexOf(type) > -1);
+                    try {
+                        fn();
                     }
-                    else if (type) {
-                        ok = type.test(msg);
+                    catch (e) {
+                        ok = true;
+                        msg = e.message;
+
+                        if (typeof type === 'string') {
+                            ok = (msg.indexOf(type) > -1);
+                        }
+                        else if (type) {
+                            ok = type.test(msg);
+                        }
+
+                        e.matched = ok;
+                        this._threw = e;
+                    }
+
+                    return ok;
+                },
+
+                explain (fn, type) {
+                    if (this.failed) {
+                        let not = this._modifiers.not;
+                        let e = this._threw;
+                        let s = this.expectation;
+
+                        s = s ? s + ' ' : '';
+
+                        if (!e) {
+                            // expect(f).to.throw('X')
+                            //  ==> Expected f to throw X and it did not throw
+                            s += `but it did not throw`;
+                        }
+                        else if (type && e.matched) {
+                            // expect(f).not.to.throw('X')
+                            //  ==> Expected f not to throw X but it did
+                            // expect(f).not.to.throw();
+                            //  ==> Expected f not to throw but it did
+                            s += `but it did`;
+                        }
+                        else {
+                            // expect(f).to.throw('X')
+                            //  ==> Expected f to throw X but threw Y
+                            s += `but it threw ${A.print(e.message)}`;
+                        }
+
+                        this.expectation = s;
                     }
                 }
-
-                return ok;
             },
 
             'truthy,ok' (actual) {
@@ -449,45 +487,18 @@ class Assert {
     } // getDefaults
 
     static normalize (registry) {
-        let ret = {};
+        let ret = new Empty();
 
         for (let name of Object.keys(registry)) {
             let def = registry[name];
-            let t = typeof def;
 
-            if (t === 'function') {
+            if (def === true) {
+                def = {};
+            }
+            else if (typeof def === 'function') {
                 def = {
                     evaluate: def
                 };
-            }
-            else if (t === 'string' || Array.isArray(def)) {
-                def = {
-                    after: def  // to: 'be'   OR   'to.have': ['only', 'own']
-                };
-            }
-
-            let after  = Util.toArray(def.after);
-            let before = Util.toArray(def.before);
-
-            if (Util.tupleRe.test(name)) {
-                // 'afters.name,alias.befores'
-                let tuples = name.split(Util.tupleRe);
-                let b = tuples.shift();
-                name = tuples.shift();
-                let a = tuples[0];
-
-                a = a && a.split(',');
-                b = b && b.split(',');
-
-                after = a ? after.concat(a) : after;
-                before  = b ? before.concat(b)  : before;
-            }
-
-            if (!before.length) {
-                before = [def.evaluate ? (name === 'be' ? 'to' : 'be') : '$'];
-            }
-            if (before.indexOf('to') > -1 && before.indexOf('not') < 0) {
-                before = ['not'].concat(before);
             }
 
             let names = name.split(',');
@@ -498,14 +509,13 @@ class Assert {
             }
 
             ret[name] = {
-                alias: names.length ? names : [],
-                after: after,
-                before: before,
+                name: name,
+                alias: names,
                 evaluate: def.evaluate || null,
-                exec: def.exec || null,
                 explain: def.explain || null,
                 get: def.get || null,
-                name: name
+                invoke: def.invoke || null,
+                next: def.next || null
             };
         }
 
@@ -514,7 +524,6 @@ class Assert {
 
     static register (...args) {
         const A = this;
-        const P = A.prototype;
 
         for (let registry of args) {
             if (typeof registry === 'function') {
@@ -526,45 +535,9 @@ class Assert {
 
             for (let name of Object.keys(registry)) {
                 let def = registry[name];
-                let evaluate = def.evaluate && A.wrapAssertion(def);
-                let names = [name].concat(def.alias);
+                let word = A._getWord(name, def);
 
-                for (let s of names) {
-                    let entry = A._getEntry(s, name);
-                    entry.add(def.after);
-
-                    if (evaluate) {
-                        let was = entry.def;
-
-                        if (was) {
-                            def.evaluate._super = was.evaluate;
-                            if (def.explain) {
-                                def.explain._super = was.explain || null;
-                            }
-                        }
-
-                        entry.def = def;
-                        entry.evaluate = evaluate;
-                        A._addFn(P, s, evaluate);
-                    }
-                    else {
-                        A._addModifier(P, s, name);
-                    }
-
-                    for (let b of def.before) {
-                        entry = A._getEntry(b);
-                        entry.add(s);
-                    }
-                }
-            }
-        }
-
-        // Any modifiers we added that were just in befores/afters need to be
-        // wired up...
-        let names = Object.keys(A.registry);
-        for (let s of names) {
-            if (s !== '$' && !Object.getOwnPropertyDescriptor(P, s)) {
-                A._addModifier(P, s);
+                word.update(def);
             }
         }
     }
@@ -606,7 +579,6 @@ class Assert {
     }
 
     static reportFailure (msg) {
-        //console.error(msg);
         throw new Error(msg);
     }
 
@@ -614,23 +586,6 @@ class Assert {
         let registry = this.getDefaults();
 
         this.register(registry);
-    }
-
-    static wrapAssertion (def) {
-        let wrap = function (...expected) {
-            let me = this;
-
-            me.before(def);
-            me.begin(expected);
-            me.assertion();
-            me.report();
-
-            return me.finish();
-        };
-
-        wrap.def = def;
-
-        return wrap;
     }
 
     //-----------------------------------------------------------------------
@@ -641,114 +596,45 @@ class Assert {
      * map accordingly. This method will throw an `Error` if modifier cannot be used
      * in the current state.
      * @param {String} modifier
+     * @param {Boolean} [track=true]
      * @private
      */
-    _applyModifier (modifier) {
-        let state = this._state;
+    _applyModifier (modifier, track) {
+        let state = this._state = this.constructor.registry[modifier];
 
-        this._state = state = state.get(modifier);
+        if (track !== false) {
+            let modifiers = this._modifiers;
+            let name = state.def.name;
 
-        this._modifiers[state.name] = true;
-    }
-
-    _getEntry (name, autoCreate) {
-        return this.constructor._getEntry(name, autoCreate);
-    }
-
-    static _addFn (target, modifier, fn) {
-        const A = this;
-        const entry = A._getEntry(modifier, false);
-
-        Object.defineProperty(target, modifier, {
-            configurable: true,
-
-            get () {
-                let bound = function (...args) {
-                    return fn.apply(bound.instance, args);
-                };
-
-                bound.instance = this.instance || this;
-                bound._applyModifier = function (m) {
-                    bound.instance._applyModifier(m);
-                };
-
-                bound.instance._applyModifier(modifier);
-
-                let already = {};
-                entry.all.forEach(mod => {
-                    A._decorate(bound, mod, already);
-                });
-
-                return bound;
-            }
-        });
-    }
-
-    static _addModifier (target, name, canonicalName) {
-        if (Object.getOwnPropertyDescriptor(target, name)) {
-            throw new Error(`Modifier "${name}" already defined`);
-        }
-
-        canonicalName = canonicalName || name;
-
-        Object.defineProperty(target, name, {
-            get () {
-                this._applyModifier(canonicalName);
-                return this;
-            }
-        });
-
-        return true;
-    }
-
-    /**
-     * This method adds the necessary property getter to the `target` to track the
-     * modifier chain.
-     *
-     * @param {Object/Function} target The instance to receive the modifier.
-     * @param {String} modifier The modifier to track.
-     * @param {Object} already The map of modifiers already applied to the `target`.
-     * @private
-     */
-    static _decorate (target, modifier, already) {
-        const A = this;
-
-        if (!already[modifier]) {
-            already[modifier] = true;
-
-            // The array of modifiers allowed to follow this one:
-            let entry = A._getEntry(modifier, false);
-
-            // Check to see if this modifier is also an assertion method:
-            let fn = entry.evaluate;
-
-            if (fn) {
-                A._addFn(target, modifier, fn);
-            }
-            else {
-                A._addModifier(target, modifier);
-
-                entry.all.forEach(mod => {
-                    A._decorate(target, mod, already);
-                });
+            if (!modifiers[name]) {
+                modifiers[name] = true;
+                this.assertions.push(modifier);
             }
         }
     }
 
-    static _getEntry (name, canonicalName, autoCreate) {
-        if (typeof canonicalName === 'boolean') {
-            autoCreate = canonicalName;
-            canonicalName = null;
-        }
-        if (name !== '$' && !Util.validNameRe.test(name)) {
-            throw new Error(`Cannot register invalid name "${name}"`);
-        }
+    _doAssert (word, expected) {
+        let me = this;
 
+        me.before(word);
+        me.begin(expected);
+        me.assertion();
+        me.report();
+
+        return me.finish();
+    }
+
+    _doInvoke (word, expected) {
+        return word.def.invoke.call(this, this.value, ...expected);
+    }
+
+    static _getWord (name, def) {
         let A = this;
 
         if (!A.hasOwnProperty('registry')) {
-            A.registry = {};
+            A.registry = new Empty();
             A.forbidden = {};
+            A._Conjunction = class extends A.Conjunction {};
 
             let names = [];
 
@@ -768,63 +654,175 @@ class Assert {
             }
         }
 
-        let registry = A.registry;
-        let entry = registry[name];
+        let word = A.registry[name];
 
-        if (!entry && autoCreate !== false) {
+        if (!word && def) {
             if (A.forbidden[name]) {
                 throw new Error(`Cannot redefine "${name}"`);
             }
 
-            registry[name] = entry = new A.Modifier(A, name, canonicalName);
+            word = new A.Word(A, name, def);
         }
 
-        return entry;
+        return word;
     }
 } // Assert
 
-Assert.Modifier = class {
-    constructor (owner, name, canonicalName) {
-        this.all = [];
-        this.map = {};
-        this.name = name;
-        this.owner = owner;
-        this.canonicalName = canonicalName || name;
+Assert.Conjunction = class {
+    constructor (assertion) {
+        this._assertion = assertion;
 
-        this.alias = this.canonicalName !== name;
+        let async = assertion._async;
+
+        if (async) {
+            this.then = async.then.bind(async);
+        }
     }
 
-    add (name) {
-        if (!name) {
-            return;
+    get and () {
+        const a = this._assertion;
+        const A = a.constructor;
+
+        return new A(a.value, a);
+    }
+};
+
+Assert.Word = class {
+    constructor (A, name, def) {
+        let me = this;
+
+        me.owner = A;
+        me.name = name;
+        me.def = def;
+        me.track = def.invoke ? !!def.track : (def.track !== false);
+
+        me.define(name);
+        me.defineConjunction(name);
+    }
+
+    define (name, target) {
+        if (!Util.validNameRe.test(name)) {
+            throw new Error(`Cannot register invalid name "${name}"`);
         }
 
-        let map = this.map;
-        let all = this.all;
-        let names = (typeof name === 'string') ? [name] : name;
+        const word = this;
+        const A = word.owner;
 
-        for (let s of names) {
-            if (!map[s]) {
-                map[s] = true;
-                all.push(s);
+        if (!target) {
+            target = A.prototype;
+            A.registry[name] = word;
+        }
+
+        Object.defineProperty(target, name, {
+            get () {
+                let me = this;
+                let assertion = me.$me || me;
+                let def = word.def;
+                let from = me.$word;
+                let get = from && from.def.get;
+
+                if (get) {
+                    assertion = get.call(assertion, assertion.value) || assertion;
+                }
+
+                if (def.evaluate || def.invoke) {
+                    let bound = function (...args) {
+                        if (def.evaluate) {
+                            return assertion._doAssert(word, args);
+                        }
+
+                        return assertion._doInvoke(word, args);
+                    };
+
+                    bound.$me = assertion;
+                    bound.$word = word;
+
+                    assertion._applyModifier(name, word.track);
+
+                    for (let mod in A.registry) {
+                        let w = A.registry[mod];
+
+                        // We can skip this word and its aliases...
+                        if (w !== word) {
+                            w.define(mod, bound);
+                        }
+                    }
+
+                    return bound;
+                }
+
+                // just a modifier...
+
+                get = word.def.get;
+
+                if (get) {
+                    let v = get.call(assertion, assertion.value);
+
+                    if (v) {
+                        return v;
+                    }
+                }
+
+                assertion._applyModifier(name, word.track);
+                return me;
+            }
+        });
+    }
+
+    defineConjunction (name) {
+        const word = this;
+        const A = word.owner;
+        const C = A._Conjunction;
+        const next = word.def.next;
+
+        if (next) {
+            if (next.length > 1) {
+                C.prototype[name] = function (...args) {
+                    let me = this._assertion; // "this" is the Conjunction
+
+                    return word.def.next.call(me, me.value, ...args);
+                };
+            }
+            else {
+                Object.defineProperty(C.prototype, name, {
+                    get () {
+                        let me = this._assertion; // "this" is the Conjunction
+
+                        return word.def.next.call(me, me.value);
+                    }
+                });
             }
         }
     }
 
-    get (name) {
-        if (!this.map[name]) {
-            let msg = `Expectation cannot use "${name}" `;
+    update (def) {
+        let me = this;
+        let was = me.def;
 
-            if (this.name === '$') {
-                msg += 'immediately';
-            } else {
-                msg += `after "${this.name}"`;
+        if (was && was !== def) {
+            let evaluate = def.evaluate;
+            let invoke = def.invoke;
+
+            if (invoke) {
+                invoke._super = was.invoke;
+            }
+            else if (evaluate) {
+                evaluate._super = was.evaluate;
+
+                if (def.explain) {
+                    def.explain._super = was.explain || null;
+                }
             }
 
-            throw new Error(msg);
+            if (def.get) {
+                def.get._super = was.get || null;
+            }
         }
 
-        return this.owner.registry[name];
+        for (let s of def.alias) {
+            me.define(s);
+            me.defineConjunction(s);
+        }
     }
 };
 
@@ -834,7 +832,7 @@ Assert.Promise = (typeof Promise !== 'undefined') && Promise.resolve && Promise;
 // names:
 Object.assign(Assert.prototype, {
     _async: null,
-    _def: null,
+    _word: null,
 
     actual: null,
     assertions: null,
@@ -856,6 +854,20 @@ const Util = Assert.Util = {
     validNameRe: /^[a-z][a-z0-9_]*$/i,
 
     inspect: inspect,
+
+    copy (dest, ...sources) {
+        if (dest) {
+            for (let src of sources) {
+                if (src) {
+                    for (let key in src) {
+                        dest[key] = src[key];
+                    }
+                }
+            }
+        }
+
+        return dest;
+    },
 
     isArrayLike (v) {
         if (!v || Util.notArrayLikeRe.test(typeof v)) {
@@ -1011,7 +1023,7 @@ const Util = Assert.Util = {
     },
 
     _typeOf: {
-        cache: {},
+        cache: new Empty(),
         toStringRe: /^\[object ([^\]]+)]$/,
         useTypeOfRe: /booolean|number|string|undefined/
     }

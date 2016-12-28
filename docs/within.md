@@ -1,3 +1,7 @@
+### within
+
+ - to[.not].be.within
+
 The `within` assertion supports the following forms:
 
     within (min, max, constraint="[]");

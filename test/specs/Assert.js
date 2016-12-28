@@ -5,6 +5,8 @@
 const Assert = require('../../Assert');
 const Util = Assert.Util;
 
+const emptyFn = () => {};
+
 describe('isArrayLike', function () {
     const A = Assert;
     const expect = A.expect;
@@ -681,92 +683,108 @@ function masterSuite (A) {
 
             expect(3).to.not.be(2).and.not.be.within(5, 10);
         });
+
+        it('should work allow assertions immediately', function () {
+            expect(4).to.be.above(2).and.below(10);
+
+            expect(() => {
+                expect(0).to.be.above(2).and.below(10);
+            }).
+            to.throw(`Expected 0 to be above 2`);
+
+            expect(() => {
+                expect(20).to.be.above(2).and.below(10);
+            }).
+            to.throw(`Expected 20 below 10`);
+        });
     });
 
-    describe('approximately', function () {
-        it('should match on exact numbers', function () {
-            expect(2).to.be.approximately(2);
+    ['approx', 'approximately'].forEach(function (approx) {
+        describe(approx, function () {
+            it('should match on exact numbers', function () {
+                expect(2).to.be[approx](2);
 
-            try {
-                expect(2).to.not.be.approximately(2);
-            }
-            catch (e) {
-                expect(e.message).to.be(`Expected 2 to not be 2 ± 0.001`);
-            }
-        });
+                try {
+                    expect(2).to.not.be[approx](2);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected 2 to not be 2 ± 0.001`);
+                }
+            });
 
-        it('should match greater but close numbers', function () {
-            expect(2.001).to.be.approximately(2);
+            it('should match greater but close numbers', function () {
+                expect(2.001).to.be[approx](2);
 
-            try {
-                expect(2.001).to.not.be.approximately(2);
-            }
-            catch (e) {
-                expect(e.message).to.be(`Expected 2.001 to not be 2 ± 0.001`);
-            }
-        });
+                try {
+                    expect(2.001).to.not.be[approx](2);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected 2.001 to not be 2 ± 0.001`);
+                }
+            });
 
-        it('should match lesser but close numbers', function () {
-            expect(1.999).to.be.approximately(2);
+            it('should match lesser but close numbers', function () {
+                expect(1.999).to.be[approx](2);
 
-            try {
-                expect(1.999).to.not.be.approximately(2);
-            }
-            catch (e) {
-                expect(e.message).to.be(`Expected 1.999 to not be 2 ± 0.001`);
-            }
-        });
+                try {
+                    expect(1.999).to.not.be[approx](2);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected 1.999 to not be 2 ± 0.001`);
+                }
+            });
 
-        it('should reject more distant greater numbers', function () {
-            expect(2.0011).not.to.be.approximately(2);
+            it('should reject more distant greater numbers', function () {
+                expect(2.0011).not.to.be[approx](2);
 
-            try {
-                expect(2.0011).to.be.approximately(2);
-            }
-            catch (e) {
-                expect(e.message).to.be(`Expected 2.0011 to be 2 ± 0.001`);
-            }
-        });
+                try {
+                    expect(2.0011).to.be[approx](2);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected 2.0011 to be 2 ± 0.001`);
+                }
+            });
 
-        it('should reject more distant lesser numbers', function () {
-            expect(1.9989).not.to.be.approximately(2);
+            it('should reject more distant lesser numbers', function () {
+                expect(1.9989).not.to.be[approx](2);
 
-            try {
-                expect(1.9989).to.be.approximately(2);
-            }
-            catch (e) {
-                expect(e.message).to.be(`Expected 1.9989 to be 2 ± 0.001`);
-            }
-        });
+                try {
+                    expect(1.9989).to.be[approx](2);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected 1.9989 to be 2 ± 0.001`);
+                }
+            });
 
-        it('should work for negative numbers', function () {
-            expect(-2).to.be.approximately(-2);
-            expect(-2.0011).not.to.be.approximately(-2);
-            expect(-1.999).to.be.approximately(-2);
+            it('should work for negative numbers', function () {
+                expect(-2).to.be[approx](-2);
+                expect(-2.0011).not.to.be[approx](-2);
+                expect(-1.999).to.be[approx](-2);
 
-            try {
-                expect(-2).to.not.be.approximately(-2);
-            }
-            catch (e) {
-                expect(e.message).to.be(`Expected -2 to not be -2 ± 0.001`);
-            }
-        });
+                try {
+                    expect(-2).to.not.be[approx](-2);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected -2 to not be -2 ± 0.001`);
+                }
+            });
 
-        it('should accept explicit epsilon values', function () {
-            expect(2.0011).to.be.approximately(2, 0.1);
+            it('should accept explicit epsilon values', function () {
+                expect(2.0011).to.be[approx](2, 0.1);
 
-            try {
-                expect(2.0011).to.not.be.approximately(2, 0.1);
-            }
-            catch (e) {
-                expect(e.message).to.be(`Expected 2.0011 to not be 2 ± 0.1`);
-            }
-        });
+                try {
+                    expect(2.0011).to.not.be[approx](2, 0.1);
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected 2.0011 to not be 2 ± 0.1`);
+                }
+            });
 
-        it('should reject non-numbers', function () {
-            expect(() => {
-                expect('x').to.be.approx(2);
-            }).to.throw(`Expected 'x' to be a number`);
+            it('should reject non-numbers', function () {
+                expect(() => {
+                    expect('x').to.be[approx](2);
+                }).to.throw(`Expected 'x' to be a number`);
+            });
         });
     });
 
@@ -1123,6 +1141,20 @@ function masterSuite (A) {
             }
             foo(1, 2);
         });
+
+        it('should be able to flatten', function () {
+            let a = Object.create({ a: 1 });
+            let b = Object.create({ a: '1' });
+
+            expect(a).to.not.equal(b);
+
+            expect(a).to.flatly.equal(b);
+
+            expect(() => {
+                expect(a).to.not.flatly.equal(b);
+            }).
+            to.throw(`Expected { a: 1 } to not flatly equal { a: '1' }`);
+        });
     });
 
     describe('falsy', function () {
@@ -1196,13 +1228,48 @@ function masterSuite (A) {
         });
     });
 
+    describe('get', function () {
+        it('should return a new assertion', function () {
+            let a = expect({a: 1}).get('a');
+            expect(a.value).to.be(1);
+
+            expect({a: 1}).get('a').to.be(1);
+        });
+
+        it('should not explode on undefined', function () {
+            expect(undefined).get('a').to.be(undefined);
+
+            expect(() => {
+                expect(undefined).get('a').not.to.be(undefined);
+            }).
+            to.throw(`Expected undefined not to be undefined`);
+        });
+    });
+
     ['above', 'greaterThan', 'gt'].forEach(function (gt) {
         describe(gt, function () {
             it('should match greater numbers', function () {
-                expect(3).to.be[gt](2);
+                let a = expect(3);
+
+                a.to.be[gt](2);
+
+                // _modifiers should always hold the canonical name not an alias:
+                expect(a._modifiers).to.flatly.equal({
+                    to: true,
+                    be: true,
+                    greaterThan: true
+                });
             });
+
             it('should match greater strings', function () {
                 expect('b').to.be[gt]('a');
+
+                try {
+                    expect('b').to.be[gt]('c');
+                }
+                catch (e) {
+                    expect(e.message).to.be(`Expected 'b' to be ${gt} 'c'`);
+                }
             });
 
             describe('not', function () {
@@ -1570,6 +1637,9 @@ function masterSuite (A) {
         });
         it('should work on strings', function () {
             expect('abc').to.have.length(3);
+        });
+        it('should chain on to lt', function () {
+            expect([1,2]).to.have.length.lt(4);
         });
 
         describe('not', function () {
@@ -2090,6 +2160,20 @@ function masterSuite (A) {
             }
             foo(1, 2);
         });
+
+        it('should be able to flatten', function () {
+            let a = Object.create({ a: 1 });
+            let b = Object.create({ a: 1 });
+
+            expect(a).to.not.be.same(b);
+
+            expect(a).to.be.flatly.same(b);
+
+            expect(() => {
+                expect(a).to.not.be.flatly.same(b);
+            }).
+            to.throw(`Expected { a: 1 } to not be flatly the same as { a: 1 }`);
+        });
     });
 
     describe('throw', function () {
@@ -2100,8 +2184,8 @@ function masterSuite (A) {
         });
 
         it('should succeed if function does not throw', function () {
-            expect(function () {}).not.to.throw();
-            expect(function () {}).to.not.throw();
+            expect(emptyFn).not.to.throw();
+            expect(emptyFn).to.not.throw();
         });
 
         it('should match exception message as a string', function () {
@@ -2127,8 +2211,11 @@ function masterSuite (A) {
                 expect(function foobar () {}).to.throw();
             }
             catch (e) {
-                expect(e.message).to.contain('Expected [Function: foobar] to throw');
+                expect(e.message).to.be('Expected [Function: foobar] to throw but it did not throw');
+                return;
             }
+
+            throw new Error('Did not throw');
         });
 
         describe('not', function () {
@@ -2139,8 +2226,11 @@ function masterSuite (A) {
                     }).to.throw('Foo');
                 }
                 catch (e) {
-                    expect(e.message).to.contain(`Expected [Function: fizzo] to throw 'Foo'`);
+                    expect(e.message).to.be(`Expected [Function: fizzo] to throw 'Foo' but it threw 'Bar'`);
+                    return;
                 }
+
+                throw new Error('Did not throw');
             });
 
             it('should fail on mismatch exception message as a regex', function () {
@@ -2150,8 +2240,11 @@ function masterSuite (A) {
                     }).to.throw(/foo/i);
                 }
                 catch (e) {
-                    expect(e.message).to.contain('Expected [Function: bizzo] to throw /foo/i');
+                    expect(e.message).to.be(`Expected [Function: bizzo] to throw /foo/i but it threw 'Bar'`);
+                    return;
                 }
+
+                throw new Error('Did not throw');
             });
 
             it('should fail if function throws but expected to not', function () {
@@ -2161,8 +2254,11 @@ function masterSuite (A) {
                     }).to.not.throw();
                 }
                 catch (e) {
-                    expect(e.message).to.contain('Expected [Function: foobar] to not throw');
+                    expect(e.message).to.be(`Expected [Function: foobar] to not throw but it threw 'foobar!!'`);
+                    return;
                 }
+
+                throw new Error('Did not throw');
             });
 
             it('should fail if function throws but expected not to', function () {
@@ -2172,8 +2268,11 @@ function masterSuite (A) {
                     }).not.to.throw();
                 }
                 catch (e) {
-                    expect(e.message).to.contain('Expected [Function: foobar] not to throw');
+                    expect(e.message).to.be(`Expected [Function: foobar] not to throw but it threw 'foobar!!'`);
+                    return;
                 }
+
+                throw new Error('Did not throw');
             });
         });
     }); // throw
@@ -2580,6 +2679,7 @@ describe('Assert', function () {
 describe('Custom Assert', function () {
     const failureLog = [];
     const reportLog = [];
+    let childGetterCalled;
     let explodes;
 
     class CustomAssert extends Assert {
@@ -2596,6 +2696,34 @@ describe('Custom Assert', function () {
 
     CustomAssert.setup();
     CustomAssert.register({
+        afterwardly: {
+            next (value, multiple) {
+                return new CustomAssert(value * multiple, this);
+            }
+        },
+
+        afterwards: {
+            next (value) {
+                return new CustomAssert(value, this);
+            }
+        },
+
+        child: {
+            get (item) {
+                childGetterCalled = true;
+                return new CustomAssert(item && item.children && item.children[0]);
+            },
+            invoke (item, index) {
+                return new CustomAssert(item && item.children && item.children[index]);
+            }
+        },
+
+        firstChild: {
+            get (v) {
+                return new CustomAssert(v && v.children && v.children[0]);
+            }
+        },
+
         nan: {
             evaluate: function fn (actual, expected) {
                 let r = fn._super.call(this, actual, expected);
@@ -2608,9 +2736,9 @@ describe('Custom Assert', function () {
             }
         },
 
-        'to,only/randomly': true,
+        'randomly,sporadically': true,
 
-        'to,only,randomly/explode' () {
+        explode () {
             let modifiers = this._modifiers;
             explodes = modifiers.randomly ? 'randomly' : 'always';
             if (modifiers.only) {
@@ -2652,7 +2780,7 @@ describe('Custom Assert', function () {
     const expect = CustomAssert.expect.bind(CustomAssert);
 
     afterEach(function () {
-        failureLog.length = reportLog.length = explodes = 0;
+        childGetterCalled = failureLog.length = reportLog.length = explodes = 0;
     });
 
     masterSuite(CustomAssert);
@@ -2690,7 +2818,6 @@ describe('Custom Assert', function () {
             }
             catch (e) {
                 ok = true;
-                //debugger;
             }
 
             expect(ok).to.be(true);
@@ -2706,7 +2833,6 @@ describe('Custom Assert', function () {
             }
             catch (e) {
                 ok = true;
-                //debugger;
             }
 
             expect(ok).to.be(true);
@@ -2730,6 +2856,12 @@ describe('Custom Assert', function () {
             expect(0).to.only.explode();
 
             expect(explodes).to.be('only always');
+        });
+
+        it('should track canonical names of modifiers', function () {
+            let a = expect(0).to.only.sporadically;
+
+            expect(a._modifiers).to.flatly.equal({ to: true, only: true, randomly: true });
         });
     });
 
@@ -2772,9 +2904,67 @@ describe('Custom Assert', function () {
         it('should prevent registering invalid property', function () {
             expect(() => {
                 CustomAssert.register({
-                    'to._foo': true
+                    _foo: true
                 });
             }).to.throw(`Cannot register invalid name "_foo"`);
+        });
+    });
+
+    describe('Getter', function () {
+        let c = { c: 42 };
+        let o = {
+            children: [c]
+        };
+
+        it('should be able to return a chained Assert directly', function () {
+            expect(o).firstChild.to.be(c);
+        });
+
+        it('should be able to return a chained Assert following a modifier', function () {
+            expect(o).to.firstChild.to.be(c);
+        });
+
+        it('should be able to return a chained Assert following an assert', function () {
+            expect(o).to.be.firstChild.to.be(c);
+        });
+    });
+
+    describe('Methods', function () {
+        let c = { c: 42 };
+        let d = { d: 427 };
+        let o = {
+            children: [c, d]
+        };
+
+        it('should be able to return a chained Assert directly', function () {
+            expect(o).child(1).to.be(d);
+            expect(childGetterCalled).to.be.falsy();
+        });
+
+        it('should be able to return a chained Assert following a modifier', function () {
+            expect(o).to.child(1).to.be(d);
+            expect(childGetterCalled).to.be.falsy();
+        });
+
+        it('should be able to return a chained Assert following an assert', function () {
+            expect(o).to.be.child(1).to.be(d);
+            expect(childGetterCalled).to.be.falsy();
+        });
+
+        it('should be call method getter if used as a modifier', function () {
+            expect(childGetterCalled).to.be.falsy();
+            expect(o).child.to.be(c);
+            expect(childGetterCalled).to.be.truthy();
+        });
+    });
+
+    describe('Conjunctions', function () {
+        it('should support conjunctive properties', function () {
+            expect(2).to.be(2).afterwards.to.be(2);
+        });
+
+        it('should support conjunctive methods', function () {
+            expect(2).to.be(2).afterwardly(2).to.be(4);
         });
     });
 });

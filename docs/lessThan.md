@@ -1,3 +1,7 @@
+### lessThan (aka: "below", "lt")
+
+ - to[.not].be.lessThan
+
 The `lessThan` assertion compares values using `<`.
 
 For example:

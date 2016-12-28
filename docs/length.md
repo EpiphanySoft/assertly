@@ -1,3 +1,7 @@
+### length
+
+ - to[.not].have.length
+
 This assertion checks that the `length` property is a certain value.
 
 For example:

@@ -1,3 +1,12 @@
+### key (aka: "keys")
+
+ - to[.not].only.have.own.key
+ - to[.not].only.have.key
+ - to[.not].have.own.key
+ - to[.not].have.only.own.key
+ - to[.not].have.only.key
+ - to[.not].have.key
+
 The `key` or `keys` assertion checks that a given set of property names ("keys") are
 present on the given value.
 
