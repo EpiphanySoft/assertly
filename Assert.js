@@ -17,7 +17,7 @@ class Assert {
         return new A(value);
     }
 
-    constructor (value, previous) {
+    constructor (value, previous, options) {
         let me = this;
         let A = me.constructor;
 
@@ -25,7 +25,16 @@ class Assert {
         me.value = value;
 
         me._modifiers = new Empty();
-        me._previous = previous || null;
+
+        if (previous) {
+            me._previous = previous;
+
+            if (options) {
+                if (options.description) {
+                    me._explanationPrefix += ' ' + options.description;
+                }
+            }
+        }
 
         if (!A.hasOwnProperty('registry')) {
             A.setup();
@@ -125,7 +134,7 @@ class Assert {
         let ret = fn && fn.call(me, me.value, ...exp);
 
         if (!ret) {
-            ret = `Expected ${me.actual} ${me.assertions.join(' ')}`;
+            ret = `${me._explanationPrefix} ${me.actual} ${me.assertions.join(' ')}`;
 
             if (me.expectation) {
                 ret += ' ' + me.expectation;
@@ -409,11 +418,17 @@ class Assert {
                         ok = true;
                         msg = e.message;
 
-                        if (typeof type === 'string') {
-                            ok = (msg.indexOf(type) > -1);
-                        }
-                        else if (type) {
-                            ok = type.test(msg);
+                        if (type) {
+                            if (typeof type === 'string') {
+                                ok = (msg.indexOf(type) > -1);
+                            }
+                            else if (type === Error ||
+                                     Error.prototype.isPrototypeOf(type.prototype)) {
+                                ok = e instanceof type;
+                            }
+                            else {
+                                ok = type.test(msg);
+                            }
                         }
 
                         e.matched = ok;
@@ -845,6 +860,8 @@ Assert.Promise = (typeof Promise !== 'undefined') && Promise.resolve && Promise;
 // names:
 Object.assign(Assert.prototype, {
     _async: null,
+    _explanationPrefix: 'Expected',
+    _previous: null,
     _word: null,
 
     actual: null,

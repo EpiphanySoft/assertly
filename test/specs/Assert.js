@@ -2206,6 +2206,26 @@ function masterSuite (A) {
             }).to.throw(/foo/i);
         });
 
+        it('should accept exceptions by class', function () {
+            expect(() => {
+                throw new RangeError();
+            }).to.throw(RangeError);
+        });
+
+        it('should fail on exception class mismatch', function () {
+            try {
+                expect(() => {
+                    throw new Error('Oops');
+                }).to.throw(RangeError);
+            }
+            catch (e) {
+                expect(e.message).to.be(`Expected [Function] to throw [Function: RangeError] but it threw 'Oops'`);
+                return;
+            }
+
+            throw new Error('Did not throw');
+        });
+
         it('should fail if function does not throw', function () {
             try {
                 expect(function foobar () {}).to.throw();
@@ -2707,13 +2727,17 @@ describe('Custom Assert', function () {
     CustomAssert.register({
         afterwardly: {
             next (value, multiple) {
-                return new CustomAssert(value * multiple, this);
+                return new CustomAssert(value * multiple, this, {
+                    description: 'afterwardly'
+                });
             }
         },
 
         afterwards: {
             next (value) {
-                return new CustomAssert(value, this);
+                return new CustomAssert(value, this, {
+                    description: 'afterwards'
+                });
             }
         },
 
@@ -2973,10 +2997,20 @@ describe('Custom Assert', function () {
     describe('Conjunctions', function () {
         it('should support conjunctive properties', function () {
             expect(2).to.be(2).afterwards.to.be(2);
+
+            expect(() => {
+                expect(2).to.be(2).afterwards.to.be(21);
+            }).
+            to.throw(`Expected afterwards 2 to be 21`);
         });
 
         it('should support conjunctive methods', function () {
             expect(2).to.be(2).afterwardly(2).to.be(4);
+
+            expect(() => {
+                expect(2).to.be(2).afterwardly(2).to.be(42);
+            }).
+            to.throw(`Expected afterwardly 4 to be 42`);
         });
     });
 });
