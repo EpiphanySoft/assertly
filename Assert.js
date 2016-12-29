@@ -52,7 +52,7 @@ class Assert {
                 me.failed = me._modifiers.not ? !result : result;
             }
             catch (e) {
-                me.failed = e;
+                me.failed = e.isAssertFailure ? e.message : e;
             }
         }
     }
@@ -218,12 +218,20 @@ class Assert {
                 return actual === expected;
             },
 
-            contain (actual, expected, at) {
-                let i = actual.indexOf(expected);
-                if (at != null) {
-                    return i === at;
+            contain: {
+                evaluate (actual, expected, at) {
+                    let i = actual.indexOf(expected);
+                    if (at != null) {
+                        return i === at;
+                    }
+                    return i > -1;
+                },
+
+                explain (actual, expected, at) {
+                    if (at != null) {
+                        this.expectation = `${A.print(expected)} at ${at}`;
+                    }
                 }
-                return i > -1;
             },
 
             empty (actual) {
@@ -420,7 +428,12 @@ class Assert {
 
                         if (type) {
                             if (typeof type === 'string') {
-                                ok = (msg.indexOf(type) > -1);
+                                if (this._modifiers.match) {
+                                    ok = msg === type;
+                                }
+                                else {
+                                    ok = (msg.indexOf(type) > -1);
+                                }
                             }
                             else if (type === Error ||
                                      Error.prototype.isPrototypeOf(type.prototype)) {
@@ -594,7 +607,7 @@ class Assert {
     }
 
     static reportFailure (msg) {
-        throw new Error(msg);
+        throw new this.Failure(msg);
     }
 
     static setup () {
@@ -702,6 +715,9 @@ Assert.Conjunction = class {
     }
 };
 
+Assert.Failure = class extends Error {};
+Assert.Failure.prototype.isAssertFailure = true;
+
 Assert.Word = class {
     constructor (A, name, def) {
         let me = this;
@@ -711,7 +727,6 @@ Assert.Word = class {
         me.track = def.invoke ? !!def.track : (def.track !== false);
 
         me.define(name);
-        me.defineConjunction(name);
     }
 
     define (name, target) {
@@ -735,9 +750,31 @@ Assert.Word = class {
                 let get = from && from.get;
 
                 if (get) {
-                    assertion = get.call(assertion, assertion.value) || assertion;
+                    // We have this "previous" get method lurking if we have just
+                    // returned a bound method (since we cannot know if that method
+                    // will be called or simply used as a step in the dot-chain).
+                    //
+                    // For example:
+                    //
+                    //      expect(x).to.be.same(y);
+                    //                      ^^^^
+                    //                      we are here
+                    //
+                    // If hypothetically "be" defined a getter, "me.$word" is "be"
+                    // and we need to call that getter to see if it wants us to
+                    // jump tracks "just in time" to evaluate "same".
+                    //
+                    let a = get.call(assertion, assertion.value);
+                    if (a) {
+                        me = assertion = a;
+                    }
                 }
 
+                // If we are being asked for a method, we won't know whether it will
+                // be called or a step in the dot-chain (see above), so we return a
+                // special bound method. If it is called, it routes the call to the
+                // assertion. It also defines all the Words as properties on itself
+                // so we can proceed beyond it using dots.
                 if (word.evaluate || word.invoke) {
                     let bound = function (...args) {
                         if (word.evaluate) {
@@ -764,8 +801,12 @@ Assert.Word = class {
                     return bound;
                 }
 
-                // just a modifier...
-
+                // The word is not a method, so we can process it completely now. If
+                // it defined a getter, we can call it now. If it wants to redirect
+                // the assert, we'll return the new instance, otherwise we'll track
+                // the word in the modifiers collection. Since "this" could be some
+                // bound method, we have to be careful to separate "this" (aka "me")
+                // from the actual Assert instance ("assertion").
                 get = word.get;
 
                 if (get) {
@@ -789,14 +830,11 @@ Assert.Word = class {
         const next = word.next;
 
         if (next) {
-            if (next.length > 1) {
-                C.prototype[name] = function (...args) {
-                    let me = this._assertion; // "this" is the Conjunction
-
-                    return word.next.call(me, me.value, ...args);
-                };
-            }
-            else {
+            if (next.length < 2) {
+                // If the conjunction method ("next") takes only one argument, it is
+                // used as a property and not called, so just define a getter on the
+                // Conjunction prototype. We can call the "next" method and provide
+                // the "actual" value parameter.
                 Object.defineProperty(C.prototype, name, {
                     get () {
                         let me = this._assertion; // "this" is the Conjunction
@@ -804,6 +842,16 @@ Assert.Word = class {
                         return word.next.call(me, me.value);
                     }
                 });
+            }
+            else {
+                // If the conjunction method takes two or more arguments, the user
+                // must supply them, so we simply put a method on the Conjunction
+                // prototype to jam in the "actual" value as the first parameter.
+                C.prototype[name] = function (...args) {
+                    let me = this._assertion; // "this" is the Conjunction
+
+                    return word.next.call(me, me.value, ...args);
+                };
             }
         }
     }
@@ -840,6 +888,8 @@ Assert.Word = class {
         me.set(def, 'invoke');
 
         if (me.set(def, 'next')) {
+            // If this word was previously not a conjunction and now is, be sure
+            // to define it.
             me.defineConjunction(me.name);
         }
 

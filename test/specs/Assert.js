@@ -156,12 +156,10 @@ function masterSuite (A) {
             it('should match arrays', function () {
                 expect([]).to.be.an(T);
 
-                try {
+                expect(() => {
                     expect([]).not.to.be.an(T);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected [] not to be an array`);
-                }
+                }).
+                to.throw(`Expected [] not to be an array`);
             });
 
             describe('not', function () {
@@ -212,13 +210,12 @@ function masterSuite (A) {
             it('should match false', function () {
                 expect(false).to.be.a(T);
 
-                try {
+                expect(() => {
                     expect(false).not.to.be.a(T);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected false not to be a boolean`);
-                }
+                }).
+                to.throw(`Expected false not to be a boolean`);
             });
+
             it('should match true', function () {
                 expect(true).to.be.a(T);
             });
@@ -272,14 +269,12 @@ function masterSuite (A) {
             it('should match new Date', function () {
                 expect(V).to.be.a(T);
 
-                try {
+                expect(() => {
                     expect(V).not.to.be.a(T);
-                }
-                catch (e) {
-                    // We get a Date like "2016-02-02T06:00:00.000Z" but we don't
-                    // care about the TZ parts really, just that it look right.
-                    expect(e.message).to.match(/^Expected 2016-02-\d\dT\d\d:\d\d:\d\d[\dZ.]* not to be a date$/);
-                }
+                }).
+                // We get a Date like "2016-02-02T06:00:00.000Z" but we don't
+                // care about the TZ parts really, just that it look right.
+                to.throw(/^Expected 2016-02-\d\dT\d\d:\d\d:\d\d[\dZ.]* not to be a date$/);
             });
 
             describe('not', function () {
@@ -327,12 +322,10 @@ function masterSuite (A) {
             it('should match an error', function () {
                 expect(E).to.be.an(T);
 
-                try {
+                expect(() => {
                     expect(E).not.to.be.an(T);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected TypeError('Boo') not to be an error`);
-                }
+                }).
+                to.match.throw(`Expected TypeError('Boo') not to be an error`);
             });
 
             describe('not', function () {
@@ -376,12 +369,10 @@ function masterSuite (A) {
             it('should match a function', function () {
                 expect(F).to.be.a(T);
 
-                try {
+                expect(() => {
                     expect(F).not.to.be.a(T);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected [Function: Func] not to be a function`);
-                }
+                }).
+                to.match.throw(`Expected [Function: Func] not to be a function`);
             });
 
             describe('not', function () {
@@ -428,12 +419,10 @@ function masterSuite (A) {
             it('should match non-zero', function () {
                 expect(1).to.be.a(T);
 
-                try {
+                expect(() => {
                     expect(1).not.to.be.a(T);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected 1 not to be a number`);
-                }
+                }).
+                to.match.throw(`Expected 1 not to be a number`);
             });
             it('should match 0', function () {
                 expect(0).to.be.a(T);
@@ -441,42 +430,34 @@ function masterSuite (A) {
             it('should match -0', function () {
                 expect(-0).to.be.a(T);
 
-                try {
+                expect(() => {
                     expect(-0).not.to.be.a(T);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected -0 not to be a number`);
-                }
+                }).
+                to.match.throw(`Expected -0 not to be a number`);
             });
             it('should match infinity', function () {
                 expect(Infinity).to.be.a(T);
 
-                try {
+                expect(() => {
                     expect(Infinity).not.to.be.a(T);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected ∞ not to be a number`);
-                }
+                }).
+                to.match.throw(`Expected ∞ not to be a number`);
             });
             it('should match negative infinity', function () {
                 expect(-Infinity).to.be.a(T);
 
-                try {
+                expect(() => {
                     expect(-Infinity).not.to.be.a(T);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected -∞ not to be a number`);
-                }
+                }).
+                to.match.throw(`Expected -∞ not to be a number`);
             });
             it('should match NaN', function () {
                 expect(NaN).to.be.a(T);
 
-                try {
+                expect(() => {
                     expect(NaN).not.to.be.a(T);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected NaN not to be a number`);
-                }
+                }).
+                to.match.throw(`Expected NaN not to be a number`);
             });
 
             describe('not', function () {
@@ -523,12 +504,10 @@ function masterSuite (A) {
             it('should match plain object', function () {
                 expect({}).to.be.an(T);
 
-                try {
+                expect(() => {
                     expect({}).not.to.be.an(T);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected {} not to be an object`);
-                }
+                }).
+                to.match.throw(`Expected {} not to be an object`);
             });
 
             describe('not', function () {
@@ -575,12 +554,10 @@ function masterSuite (A) {
             it('should match regex', function () {
                 expect(/a/).to.be.a(T);
 
-                try {
+                expect(() => {
                     expect(/a/).not.to.be.a(T);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected /a/ not to be a regexp`);
-                }
+                }).
+                to.match.throw(`Expected /a/ not to be a regexp`);
             });
 
             describe('not', function () {
@@ -628,12 +605,10 @@ function masterSuite (A) {
                 expect('').to.be.a(T);
                 expect('a').to.be.a(T);
 
-                try {
+                expect(() => {
                     expect('a').not.to.be.a(T);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected 'a' not to be a string`);
-                }
+                }).
+                to.match.throw(`Expected 'a' not to be a string`);
             });
 
             describe('not', function () {
@@ -690,12 +665,12 @@ function masterSuite (A) {
             expect(() => {
                 expect(0).to.be.above(2).and.below(10);
             }).
-            to.throw(`Expected 0 to be above 2`);
+            to.match.throw(`Expected 0 to be above 2`);
 
             expect(() => {
                 expect(20).to.be.above(2).and.below(10);
             }).
-            to.throw(`Expected 20 below 10`);
+            to.match.throw(`Expected 20 below 10`);
         });
     });
 
@@ -704,56 +679,46 @@ function masterSuite (A) {
             it('should match on exact numbers', function () {
                 expect(2).to.be[approx](2);
 
-                try {
+                expect(() => {
                     expect(2).to.not.be[approx](2);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected 2 to not be 2 ± 0.001`);
-                }
+                }).
+                to.match.throw(`Expected 2 to not be 2 ± 0.001`);
             });
 
             it('should match greater but close numbers', function () {
                 expect(2.001).to.be[approx](2);
 
-                try {
+                expect(() => {
                     expect(2.001).to.not.be[approx](2);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected 2.001 to not be 2 ± 0.001`);
-                }
+                }).
+                to.match.throw(`Expected 2.001 to not be 2 ± 0.001`);
             });
 
             it('should match lesser but close numbers', function () {
                 expect(1.999).to.be[approx](2);
 
-                try {
+                expect(() => {
                     expect(1.999).to.not.be[approx](2);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected 1.999 to not be 2 ± 0.001`);
-                }
+                }).
+                to.match.throw(`Expected 1.999 to not be 2 ± 0.001`);
             });
 
             it('should reject more distant greater numbers', function () {
                 expect(2.0011).not.to.be[approx](2);
 
-                try {
+                expect(() => {
                     expect(2.0011).to.be[approx](2);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected 2.0011 to be 2 ± 0.001`);
-                }
+                }).
+                to.match.throw(`Expected 2.0011 to be 2 ± 0.001`);
             });
 
             it('should reject more distant lesser numbers', function () {
                 expect(1.9989).not.to.be[approx](2);
 
-                try {
+                expect(() => {
                     expect(1.9989).to.be[approx](2);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected 1.9989 to be 2 ± 0.001`);
-                }
+                }).
+                to.match.throw(`Expected 1.9989 to be 2 ± 0.001`);
             });
 
             it('should work for negative numbers', function () {
@@ -761,29 +726,26 @@ function masterSuite (A) {
                 expect(-2.0011).not.to.be[approx](-2);
                 expect(-1.999).to.be[approx](-2);
 
-                try {
+                expect(() => {
                     expect(-2).to.not.be[approx](-2);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected -2 to not be -2 ± 0.001`);
-                }
+                }).
+                to.match.throw(`Expected -2 to not be -2 ± 0.001`);
             });
 
             it('should accept explicit epsilon values', function () {
                 expect(2.0011).to.be[approx](2, 0.1);
 
-                try {
+                expect(() => {
                     expect(2.0011).to.not.be[approx](2, 0.1);
-                }
-                catch (e) {
-                    expect(e.message).to.be(`Expected 2.0011 to not be 2 ± 0.1`);
-                }
+                }).
+                to.match.throw(`Expected 2.0011 to not be 2 ± 0.1`);
             });
 
             it('should reject non-numbers', function () {
                 expect(() => {
                     expect('x').to.be[approx](2);
-                }).to.throw(`Expected 'x' to be a number`);
+                }).
+                to.match.throw(`Expected 'x' to be a number`);
             });
         });
     });
@@ -791,26 +753,51 @@ function masterSuite (A) {
     describe('be', function () {
         it('should match on exact numbers', function () {
             expect(2).to.be(2);
+
+            expect(() => {
+                expect(2).to.be(3);
+            }).
+            to.match.throw(`Expected 2 to be 3`);
         });
 
         it('should match on exact regexps', function () {
             let re = /a/;
             expect(re).to.be(re);
+
+            expect(() => {
+                expect(re).to.be(/a/);
+            }).
+            to.match.throw(`Expected /a/ to be /a/`);
         });
 
         it('should match on exact objects', function () {
             let o = {};
             expect(o).to.be(o);
+
+            expect(() => {
+                expect(o).to.be({});
+            }).
+            to.match.throw(`Expected {} to be {}`);
         });
 
         it('should match on exact strings', function () {
             expect('abc').to.be('abc');
+
+            expect(() => {
+                expect('aaa').to.be('bbb');
+            }).
+            to.match.throw(`Expected 'aaa' to be 'bbb'`);
         });
 
         describe('not', function () {
             it('should not match using conversions', function () {
                 expect(2).to.not.be('2');
                 expect(2).not.to.be('2');
+
+                expect(() => {
+                    expect(2).to.not.be(2);
+                }).
+                to.match.throw(`Expected 2 to not be 2`);
             });
 
             it('should not match on equivalence', function () {
@@ -824,6 +811,11 @@ function masterSuite (A) {
         describe('arrays', function () {
             it('should find false', function () {
                 expect([1, 2, false]).to.contain(false);
+
+                expect(() => {
+                    expect([1, 2, false]).to.not.contain(false);
+                }).
+                to.match.throw(`Expected [ 1, 2, false ] to not contain false`);
             });
             it('should find true', function () {
                 expect([1, true, 3]).to.contain(true);
@@ -858,11 +850,10 @@ function masterSuite (A) {
             });
 
             it('should fail when not contained', function () {
-                try {
+                expect(() => {
                     expect('hello').to.contain('xo');
-                } catch (e) {
-                    expect(e.message).to.contain(`Expected 'hello' to contain 'xo'`);
-                }
+                }).
+                to.match.throw(`Expected 'hello' to contain 'xo'`);
             });
         });
 
@@ -870,6 +861,11 @@ function masterSuite (A) {
             describe('arrays', function () {
                 it('should find false', function () {
                     expect([1, 2, false]).to.contain(false, 2);
+
+                    expect(() => {
+                        expect([1, 2, false]).to.not.contain(false, 2);
+                    }).
+                    to.match.throw(`Expected [ 1, 2, false ] to not contain false at 2`);
                 });
                 it('should find true', function () {
                     expect([1, true, 3]).to.contain(true, 1);
@@ -934,11 +930,10 @@ function masterSuite (A) {
                 });
 
                 it('should fail when not contained', function () {
-                    try {
+                    expect(() => {
                         expect([1,2,0]).to.not.contain(0);
-                    } catch (e) {
-                        expect(e.message).to.contain(`Expected [ 1, 2, 0 ] to not contain 0`);
-                    }
+                    }).
+                    to.match.throw(`Expected [ 1, 2, 0 ] to not contain 0`);
                 });
             });
 
@@ -946,6 +941,11 @@ function masterSuite (A) {
                 it('should work on exact length', function () {
                     expect('hello').not.to.contain('Hello');
                     expect('hello').to.not.contain('Hello');
+
+                    expect(() => {
+                        expect('hello').to.not.contain('el');
+                    }).
+                    to.match.throw(`Expected 'hello' to not contain 'el'`);
                 });
                 it('should work for shorter', function () {
                     expect('hello').not.to.contain('ff');
@@ -957,11 +957,10 @@ function masterSuite (A) {
                 });
 
                 it('should fail when not contained', function () {
-                    try {
+                    expect(() => {
                         expect('hello').to.not.contain('he');
-                    } catch (e) {
-                        expect(e.message).to.contain(`Expected 'hello' to not contain 'he'`);
-                    }
+                    }).
+                    to.match.throw(`Expected 'hello' to not contain 'he'`);
                 });
             });
 
@@ -1153,7 +1152,7 @@ function masterSuite (A) {
             expect(() => {
                 expect(a).to.not.flatly.equal(b);
             }).
-            to.throw(`Expected { a: 1 } to not flatly equal { a: '1' }`);
+            to.match.throw(`Expected { a: 1 } to not flatly equal { a: '1' }`);
         });
     });
 
@@ -1242,7 +1241,7 @@ function masterSuite (A) {
             expect(() => {
                 expect(undefined).get('a').not.to.be(undefined);
             }).
-            to.throw(`Expected undefined not to be undefined`);
+            to.match.throw(`Expected undefined not to be undefined`);
         });
     });
 
@@ -2172,15 +2171,32 @@ function masterSuite (A) {
             expect(() => {
                 expect(a).to.not.be.flatly.same(b);
             }).
-            to.throw(`Expected { a: 1 } to not be flatly the same as { a: 1 }`);
+            to.match.throw(`Expected { a: 1 } to not be flatly the same as { a: 1 }`);
         });
     });
 
     describe('throw', function () {
         it('should basically work', function () {
+            let called = false;
+
             expect(function () {
+                called = true;
                 throw new Error('Foo');
             }).to.throw();
+
+            expect(called).to.be(true);
+        });
+
+        it('should report failure if the function does not throw', function () {
+            try {
+                expect(emptyFn).to.throw();
+            }
+            catch (e) {
+                expect(e.message).to.be('Expected [Function] to throw but it did not throw');
+                return;
+            }
+
+            throw new Error(`Did not throw`);
         });
 
         it('should succeed if function does not throw', function () {
@@ -2998,7 +3014,7 @@ describe('Custom Assert', function () {
             expect(childGetterCalled).to.be.falsy();
         });
 
-        it('should be call method getter if used as a modifier', function () {
+        it('should call getter if used as a modifier', function () {
             expect(childGetterCalled).to.be.falsy();
             expect(o).child.to.be(c);
             expect(childGetterCalled).to.be.truthy();
@@ -3006,7 +3022,7 @@ describe('Custom Assert', function () {
             expect(() => {
                 expect(o).child.to.be({ x: 1});
             }).
-            to.throw(`Expected firstChild { c: 42 } to be { x: 1 }`);
+            to.throw(`Expected child[0] { c: 42 } to be { x: 1 }`);
         });
     });
 
