@@ -795,6 +795,7 @@ Assert.Word = class {
 
     set (def, name) {
         let value = def[name];
+        let ret = false;
 
         if (value) {
             let me = this;
@@ -805,7 +806,10 @@ Assert.Word = class {
             }
 
             me[name] = value;
+            ret = !was;
         }
+
+        return ret;
     }
 
     update (def) {
@@ -819,7 +823,10 @@ Assert.Word = class {
         me.set(def, 'explain');
         me.set(def, 'get');
         me.set(def, 'invoke');
-        me.set(def, 'next');
+
+        if (me.set(def, 'next')) {
+            me.defineConjunction(me.name);
+        }
 
         if ('track' in def) {
             me.track = def.track;
