@@ -2744,16 +2744,22 @@ describe('Custom Assert', function () {
         child: {
             get (item) {
                 childGetterCalled = true;
-                return new CustomAssert(item && item.children && item.children[0]);
+                return new CustomAssert(item && item.children && item.children[0], this, {
+                    description: 'child[0]'
+                });
             },
             invoke (item, index) {
-                return new CustomAssert(item && item.children && item.children[index]);
+                return new CustomAssert(item && item.children && item.children[index], this, {
+                    description: `child[${index}]`
+                });
             }
         },
 
         firstChild: {
             get (v) {
-                return new CustomAssert(v && v.children && v.children[0]);
+                return new CustomAssert(v && v.children && v.children[0], this, {
+                    description: 'firstChild'
+                });
             }
         },
 
@@ -2954,6 +2960,11 @@ describe('Custom Assert', function () {
 
         it('should be able to return a chained Assert directly', function () {
             expect(o).firstChild.to.be(c);
+
+            expect(() => {
+                expect(o).firstChild.to.be({ x: 1});
+            }).
+            to.throw(`Expected firstChild { c: 42 } to be { x: 1 }`);
         });
 
         it('should be able to return a chained Assert following a modifier', function () {
@@ -2991,6 +3002,11 @@ describe('Custom Assert', function () {
             expect(childGetterCalled).to.be.falsy();
             expect(o).child.to.be(c);
             expect(childGetterCalled).to.be.truthy();
+
+            expect(() => {
+                expect(o).child.to.be({ x: 1});
+            }).
+            to.throw(`Expected firstChild { c: 42 } to be { x: 1 }`);
         });
     });
 
