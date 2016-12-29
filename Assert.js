@@ -22,7 +22,7 @@ class Assert {
         let A = me.constructor;
 
         me.assertions = [];
-        me.value = value;
+        me.actual = me.value = value;
 
         me._modifiers = new Empty();
 
@@ -87,7 +87,7 @@ class Assert {
         else if (async || Util.isPromise(me.value) || Util.isPromise(...expected)) {
             me._async = A.Promise.all(expected.concat(me.value)).then(values => {
                 me.expected = values;
-                me.value = values.pop();
+                me.actual = me.value = values.pop();
 
                 if (A._current === me) {
                     // If this is the end of the line of assertions, clean things up
@@ -128,7 +128,7 @@ class Assert {
 
         const A = me.constructor;
 
-        me.actual = A.print(me.value);
+        me.actual = A.print(me.actual);
         me.expectation = me.expectation || (n ? A.print(n === 1 ? exp[0] : exp) : '');
 
         let ret = fn && fn.call(me, me.value, ...exp);
@@ -271,7 +271,7 @@ class Assert {
             flatly: {
                 get (value) {
                     if (value && typeof value === 'object') {
-                        this.value = Util.copy({}, value);
+                        this.actual = this.value = Util.copy({}, value);
                     }
                 }
             },
