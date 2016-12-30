@@ -486,30 +486,42 @@ class Assert {
                 return !!actual;
             },
 
-            within (actual, min, max, constraint) {
-                let lo, hi;
+            within: {
+                evaluate (actual, min, max, constraint) {
+                    let lo, hi;
 
-                if (constraint) {
-                    lo = constraint[0];
-                    hi = constraint[1];
-                }
-                else if (typeof min === 'string') {
-                    let m = Util.rangeRe.exec(min);
-                    lo = m[1];
-                    min = parseFloat(m[2]);
-                    max = parseFloat(m[3]);
-                    hi = m[4];
-                }
-                else {
-                    lo = '[';
-                    hi = ']';
-                }
+                    if (constraint) {
+                        lo = constraint[0];
+                        hi = constraint[1];
+                    }
+                    else if (typeof min === 'string') {
+                        let m = Util.rangeRe.exec(min);
+                        lo = m[1];
+                        min = parseFloat(m[2]);
+                        max = parseFloat(m[3]);
+                        hi = m[4];
+                    }
+                    else {
+                        lo = '[';
+                        hi = ']';
+                    }
 
-                if (lo === '[' ? actual < min : actual <= min) {
-                    return false;
-                }
+                    this._constraint = Util._within[lo+hi];
 
-                return hi === ']' ? actual <= max : actual < max;
+                    if (lo === '[' ? actual < min : actual <= min) {
+                        return false;
+                    }
+
+                    return hi === ']' ? actual <= max : actual < max;
+                },
+
+                explain (actual, min, max, constraint) {
+                    if (constraint) {
+                        this.expectation = A.print(this.expected.slice(0, 2));
+                    }
+
+                    this.expectation += this._constraint;
+                }
             }
         });
     } // getDefaults
@@ -934,6 +946,13 @@ const Util = Assert.Util = {
     validNameRe: /^[a-z][a-z0-9_]*$/i,
 
     inspect: inspect,
+
+    _within: {
+        '[]': ' (inclusive)',
+        '()': ' (exclusive)',
+        '[)': ' (inclusive,exclusive)',
+        '(]': ' (exclusive,inclusive)'
+    },
 
     copy (dest, ...sources) {
         if (dest) {
