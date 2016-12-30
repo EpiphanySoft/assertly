@@ -630,9 +630,15 @@ class Assert {
     }
 
     static reportFailure (msg, assertion) {
+        let stackFrame = assertion._stackFrame;
+
+        if (this.hasOwnProperty('fullCallStacks') && this.fullCallStacks) {
+            stackFrame = null;
+        }
+
         throw new this.Failure(msg, {
             assertion: assertion
-        }, assertion._stackFrame);
+        }, stackFrame);
     }
 
     static setup () {

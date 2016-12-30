@@ -12,6 +12,7 @@ describe('isArrayLike', function () {
     const expect = A.expect;
     const isArrayLike = Util.isArrayLike;
 
+    //A.fullCallStacks = true;
     describe('arrayish', function () {
         it('should report true for an array', function () {
             expect(isArrayLike([])).to.be(true);
