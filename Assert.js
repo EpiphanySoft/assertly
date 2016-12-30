@@ -416,7 +416,7 @@ class Assert {
             },
 
             throw: {
-                evaluate: function fn (actual, type) {
+                evaluate: function evaluate (actual, type) {
                     let msg, ok = false;
 
                     if (actual instanceof Error) {
@@ -455,7 +455,7 @@ class Assert {
                             actual();
                         }
                         catch (e) {
-                            ok = fn.call(this, e, type);
+                            ok = evaluate.call(this, e, type);
                         }
                     }
 
@@ -629,8 +629,10 @@ class Assert {
         }
     }
 
-    static reportFailure (msg) {
-        throw new this.Failure(msg);
+    static reportFailure (msg, assertion) {
+        throw new this.Failure(msg, {
+            assertion: assertion
+        }, assertion._stackFrame);
     }
 
     static setup () {
@@ -738,8 +740,47 @@ Assert.Conjunction = class {
     }
 };
 
-Assert.Failure = class extends Error {};
-Assert.Failure.prototype.isAssertFailure = true;
+Assert.Failure = class extends Error {
+    constructor (message, properties, stackFrame) {
+        super(message);
+
+        if (stackFrame && Error.captureStackTrace) {
+            // This is a really odd bird V8 extension that sets "stack" on
+            // arguments[0] and limits the trace by arguments[1]
+            Error.captureStackTrace(this, stackFrame);
+        }
+        // else {
+        //     try {
+        //         throw new Error();
+        //     }
+        //     catch (e) {
+        //         this.stack = e.stack;
+        //     }
+        // }
+
+        Util.copyOwnExcept(this, properties, /constructor|message|name|stack|toJSON/);
+    }
+
+    get isAssertFailure () {
+        return true;
+    }
+
+    get name () {
+        return 'Assert.Failure';
+    }
+
+    toJSON (includeStack) {
+        let data = Util.copyOwnExcept({
+            name: this.name
+        }, this, /stack/);
+
+        if (includeStack !== false && this.stack) {
+            data.stack = this.stack;
+        }
+
+        return data;
+    }
+};
 
 Assert.Word = class {
     constructor (A, name, def) {
@@ -801,6 +842,7 @@ Assert.Word = class {
                 if (word.evaluate || word.invoke) {
                     let bound = function (...args) {
                         if (word.evaluate) {
+                            assertion._stackFrame = bound;
                             return assertion._doAssert(word, args);
                         }
 
@@ -972,6 +1014,18 @@ const Util = Assert.Util = {
                     for (let key in src) {
                         dest[key] = src[key];
                     }
+                }
+            }
+        }
+
+        return dest;
+    },
+
+    copyOwnExcept (dest, src, match) {
+        if (dest && src) {
+            for (let key of Object.keys(src)) {
+                if (!match.test(key)) {
+                    dest[key] = src[key];
                 }
             }
         }
