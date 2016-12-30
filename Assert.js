@@ -416,13 +416,16 @@ class Assert {
             },
 
             throw: {
-                evaluate (fn, type) {
+                evaluate: function fn (actual, type) {
                     let msg, ok = false;
 
-                    try {
-                        fn();
-                    }
-                    catch (e) {
+                    if (actual instanceof Error) {
+                        // passing an Error as in "expect(e).to.throw(...)" isn't
+                        // really what we are trying to achieve here, but rather to
+                        // assist in augmenting the throw assertion and still access
+                        // this criteria matching logic...
+                        let e = actual;
+
                         ok = true;
                         msg = e.message;
 
@@ -446,6 +449,14 @@ class Assert {
 
                         e.matched = ok;
                         this._threw = e;
+                    }
+                    else {
+                        try {
+                            actual();
+                        }
+                        catch (e) {
+                            ok = fn.call(this, e, type);
+                        }
                     }
 
                     return ok;
