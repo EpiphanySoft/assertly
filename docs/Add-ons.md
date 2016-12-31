@@ -112,6 +112,16 @@ Alternatively, `bind()` can simplify things if `expect` is used often:
         });
     };
 
+### Debugging Add-ons
+
+Normally, expectation failures clip the callstack displayed (on V8) to only show
+the outermost call to an assertion. During development or testing of an add-on this
+can be unhelpful since add-on code may be at fault.
+
+This can be disabled like so:
+
+    Assert.fullCallStacks = true;
+
 ## Next Steps
 
 For more information on writing the contents of an add-on, see

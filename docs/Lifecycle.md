@@ -18,9 +18,9 @@ assertion method is called. When that happens, the rest of the life-cycle is run
 ## before
 
 The `before` method is called first when the assertion method is reached. It is given
-the "definition" object that defines the assertion. This is stored as `_def` on the
-`Assert` instance. This object is the normalized form from the registry object passed
-to `register`.
+the word "definition" object that defines the assertion. This is stored as `_word` on
+the `Assert` instance. This object is the normalized form from the registry object
+passed to `register`.
 
 ## begin
 
@@ -37,8 +37,8 @@ Once resolved, `begin` stores the array it is given as the `expected` property o
 
 ## assertion
 
-This method is called to invoke the actual assertion logic (`this._def.fn()`) and
-pass the actual and expected values. If the `not` modifier is present, the result
+This method is called to invoke the actual assertion logic (the `evaluate` method)
+and pass the actual and expected values. If the `not` modifier is present, the result
 is negated.
 
 This method will set the `failed` property (possibly to `false`).

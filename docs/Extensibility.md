@@ -78,7 +78,7 @@ like the following:
                 //        ^^^           ^^^
                 //        actual        expected
                 //
-                // Receives as many "expected" as are passed.
+                // Receives as many "expected" arguments as are passed.
                 //
                 // Must return true for success, false for failure
                 //
@@ -121,8 +121,8 @@ like the following:
                 //
                 // Receives as many "args" as are passed.
                 //
-                // Returns the value to use for the next step in the dot-chain (most
-                // often a new Assert instance).
+                // Can either return a new Assert or modify this Assert instance
+                // or both.
                 //
                 // Cannot be combined with evaluate().
             },
@@ -209,7 +209,8 @@ the modifier, even if the alias is used in an assertion. For example:
 
     expect(fn).to.sporadically.throw();  // sets this._modifiers.randomly
 
-The `assertions` array, however, will contain the alias used in the assertion.
+The `assertions` array, however, will contain the alias used in the assertion. See
+below for details on this array.
 
 ### Explaining Assertions
 
@@ -248,30 +249,10 @@ The parameters passed to `explain` are the same as those passed to the assertion
 `evaluate` function, which are first the "actual" value (the one passed to `expect`)
 and then the values passed in the assertion call.
 
-For example:
-
-    expect(x).to.be.foo(y, z);
-
-    // ...
-
-    Assert.register({
-        foo: {
-            evaluate (x, y, z) {
-                // truth test
-            },
-
-            explain (x, y, z) {
-                // explain the truth test
-            }
-        }
-    });
-
-The `this` pointer for an `explain` method is the `Assert` instance. Again, the most
-likely property to use is `_modifiers`.
-
-The `explain` method can (as above) return the full explanation. Alternatively, it
-can adjust the properties that are normally concatenated. The following properties
-are stored on the `Assert` instance for this purpose:
+The `this` pointer for an `explain` method is the `Assert` instance. The `explain`
+method can (as above) return the full explanation. Alternatively, it can adjust the
+properties that are normally concatenated. The following properties are stored on the
+`Assert` instance for this purpose:
 
  - `actual` - A string with the printed (`Assert.print`) `value`.
  - `assertions` - A String[] of the modifiers followed by the assertion.

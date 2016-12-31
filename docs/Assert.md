@@ -76,13 +76,8 @@ Or combined using `and`:
     expect(x).to.not.be(2).and.not.be.within(5, 10);
 
 This is handled by the assertion method returning a helper object that only provides
-the `and` method (as well as a `then` method when using promises). The `and` method
-creates a new `Assert` instance and passes along the same value and itself:
-
-    return {
-        and: new Assert(this.value, this)
-    };
-
+the `and` method (as well as a `then` method when using promises). The `and` property
+holds a new `Assert` instance with the same "actual" value as the original `Assert`.
 The previous `Assert` instance is stored as `_previous` on the new instance.
 
 ## Custom Modifiers and Assertions

@@ -1,5 +1,19 @@
 # Utils
 
+## copy
+
+**`copy (dest, ...sources)`**
+
+Copies all enumerable properties from each of the given `sources`. Returns the `dest`
+object.
+
+## copyOwnExcept
+
+**`copy (dest, src, exceptRe)`**
+
+Copies all enumerable, own properties from `src` to `dest` and returns the `dest`
+object. Properties that match `exceptRe` are skipped.
+
 ## inspect
 
 **`inspect (object, options)`**

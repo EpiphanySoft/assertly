@@ -39,10 +39,3 @@ This method is called by `Assert.report()` for assertions that have failed.
 
 You can implement this method in a derived class or hook it to process failed
 assertions.
-
-### wrapAssertion
-
-This method is called to wrap the assertion definition (the sole argument) to
-provide the proper [lifecycle](./Lifecycle.md). The returned function is
-what is returned by the property getter when the assertion is requested. For
-more details on an assertion definition see [Extensibility](./Extensibility.md).

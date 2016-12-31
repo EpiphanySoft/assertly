@@ -685,7 +685,7 @@ class Assert {
     }
 
     _doInvoke (word, expected) {
-        return word.invoke.call(this, this.value, ...expected);
+        return word.invoke.call(this, this.value, ...expected) || this;
     }
 
     static _getWord (name, def) {
