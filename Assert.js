@@ -170,6 +170,7 @@ class Assert {
             only: true,
             have: true,
             own: true,
+            exactly: true,
 
             'a,an': {
                 evaluate (actual, expected) {
@@ -431,7 +432,7 @@ class Assert {
 
                         if (type) {
                             if (typeof type === 'string') {
-                                if (this._modifiers.match) {
+                                if (this._modifiers.exactly) {
                                     ok = msg === type;
                                 }
                                 else {
