@@ -11,7 +11,7 @@ Using an add-on looks like this:
     const expect = Assert.expect;
 
     // Step 1 - Load the add-on module:
-    const addon = require('my-assertly-addon');
+    const addon = require('assertly-infinity-add-on');
 
     // Step 2 - Register the add-on:
     Assert.register(addon.init);
@@ -20,14 +20,10 @@ That's it. Now we can use the add-on's features.
 
 For example:
 
-    expect(Infinity).to.be.infinite();
+    expect(1 / 0).to.be.infinity();
 
 On Step 2, the exact exported method may differ but `init` is the recommended
 method to export for add-ons.
-
-## Known Add-ons
-
- - [assertly-sinon](https://github.com/dongryphon/assertly-sinon) [npm](https://www.npmjs.com/package/assertly-sinon)
 
 ## Writing An Add-On
 
@@ -36,7 +32,7 @@ module:
 
     module.exports.init = function (Assert, utils) {
         Assert.register({
-            infinite (actual) {
+            infinity (actual) {
                 return typeof actual === 'number' && !isFinite(actual);
             }
         });
@@ -49,6 +45,40 @@ The `init` method receives the `Assert` class and some helpful [utility](./Utils
 methods (the `utils` argument). It should then make calls to `Assert.register` to
 provide additional features.
 
+### Adding Modifiers
+
+Many add-ons will want to add modifiers as well as assertions. The following example
+adds `positive` and `negative` modifiers to our add-on:
+
+    module.exports.init = function (Assert, utils) {
+        Assert.register({
+            positive: true,
+            negative: true,
+
+            infinity (actual) {
+                if (typeof actual !== 'number' || isFinite(actual)) {
+                    return false;
+                }
+
+                if (this._modifiers.positive) {
+                    return actual > 0;
+                }
+
+                if (this._modifiers.negative) {
+                    return actual < 0;
+                }
+
+                return true;
+            }
+        });
+    };
+
+With the above, the following assertions can now be written:
+
+    expect(1 / 0).to.be.positive.infinity();
+
+    expect(-1 / 0).to.be.negative.infinity();
+
 ### Using expect
 
 It is important that an add-on `init` method only use the `Assert` and `Util`
@@ -60,7 +90,7 @@ For example, to use `expect` in an add-on:
 
     module.exports.init = function (Assert, utils) {
         Assert.register({
-            infinite (actual) {
+            infinity (actual) {
                 Assert.expect(actual).to.be.a('number');
 
                 return !isFinite(actual);
@@ -74,7 +104,7 @@ Alternatively, `bind()` can simplify things if `expect` is used often:
         const expect = Assert.expect.bind(Assert); // preserve the class
 
         Assert.register({
-            infinite (actual) {
+            infinity (actual) {
                 expect(actual).to.be.a('number');
 
                 return !isFinite(actual);

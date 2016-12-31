@@ -150,3 +150,23 @@ For example:
     expect(x).to.be.above(2).and.below(10);
 
 Assertly defines `and` by default.
+
+# Add-ons
+
+Writing [add-ons](docs/Add-ons.md) is easy! In fact it is easier the Chai (imo)!
+
+The "hello world" of extending the assertly words:
+
+    const Assert = require('assertly');
+
+    Assert.register({
+        infinity (actual) {
+            return typeof actual === 'number' && !isFinite(actual);
+        }
+    });
+
+    expect(1 / 0).to.be.infinity();
+
+## Known Add-ons
+
+ - [assertly-sinon](https://github.com/dongryphon/assertly-sinon) [npm](https://www.npmjs.com/package/assertly-sinon)

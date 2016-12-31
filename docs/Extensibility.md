@@ -16,17 +16,16 @@ Consider this minimal form:
         not: true,
 
         be (actual, expected) {
-            // "actual" (arguments[0]) is the value passed to expect()
-            // the rest of the arguments come from the call to the assertion
-            // "this" is the Assert instance. This is most commonly used to
-            // access _modifiers which is an object holding the modifiers
-            // to process (e.g., "this._modifiers.to").
-
             return actual === expected;
         },
 
         throw (fn, type) {
-            //...
+            try {
+                fn();
+            }
+            catch (e) {
+                //...
+            }
         }
     });
 
@@ -60,6 +59,157 @@ modifier and so is not needed in the truth test.
 
 When writing custom assertions, `Assert.Util` has some helpful [utility](./Utils.md)
 methods.
+
+## Advanced Configuration
+
+The value of each property in the registry object is often a simple value (as shown
+above and elaborated below), but the full, normalized form for a word is an object
+like the following:
+
+    Assert.register({
+        word: {
+            alias: ['alternate', 'other'], // other words that are equivalent
+
+            evaluate (actual, expected) {
+                // The presence of this method indicates "word" is an assertion.
+                // It is called when the user makes a call like this:
+                //
+                //  expect(x).to.be.word(y);
+                //        ^^^           ^^^
+                //        actual        expected
+                //
+                // Receives as many "expected" as are passed.
+                //
+                // Must return true for success, false for failure
+                //
+                // Cannot be combined with invoke().
+            },
+
+            explain (actual, expected) {
+                // This optional method is only called for assertions. It can
+                // adjust the explanation pieces stored on this Assert instance
+                // or can return the full explanation. The arguments are the
+                // same as for evaluate().
+            },
+
+            get (actual) {
+                // The presence of this method indicates "word" can be used as
+                // a dot-chain member but can return whatever it wants instead
+                // of the Assert instance.
+                //
+                // It is called when the user makes a call like this:
+                //
+                //  expect(x).word.to...
+                //        ^^^
+                //        actual
+                //
+                // Receives only the "actual" value stored in the Assert instance.
+                //
+                // Can either return a new Assert or modify this Assert instance
+                // or both.
+            },
+
+            invoke (actual, ...args) {
+                // The presence of this method indicates "word" is an instance
+                // method.
+                //
+                // It is called when the user makes a call like this:
+                //
+                //  expect(x).to.word(arg1, ...)...
+                //        ^^^         ^^^
+                //        actual      args
+                //
+                // Receives as many "args" as are passed.
+                //
+                // Returns the value to use for the next step in the dot-chain (most
+                // often a new Assert instance).
+                //
+                // Cannot be combined with evaluate().
+            },
+
+            next (actual) {
+                // The presence of this method indicates "word" is a conjunction
+                // (like "and"). Conjunctions are used immediately following an
+                // assertion.
+                //
+                // It is called when the user makes a call like this:
+                //
+                //  expect(x).to.be(y).word.to...
+                //        ^^^
+                //        actual
+                //
+                // In the above form, the method receives only the "actual" value.
+                // If additional arguments are declared on this method, they must
+                // be passed when using the conjunction:
+                //
+                //  expect(x).to.be(y).word(...args).to...
+                //        ^^^
+                //        actual
+                //
+                // These extra "args" follow the "actual" parameter to this methid.
+                //
+                // Must return the Assert instance to use going forward.
+            }
+        }
+    });
+
+These methods are explored more in the sections that follow.
+
+### Registry Keys And Shorthands
+
+The keys of the registry object (the object passed to `register`) can be used to give
+the name and its aliases using a comma-delimited key:
+
+    thing,alt,other
+    \   / \       /
+     \_/   \_____/
+     name   aliases
+
+When this is form is used, the canonical name is the first name and the second and
+subsequent names are considered aliases.
+
+When the value of a registry key is `true` that name and its aliases are treated as
+modifiers. If the value is a method, that method is the `evaluate` method.
+
+For example:
+
+    Assert.register({
+        'randomly,sporadically': true,
+
+        throw (fn, type) {
+            if (this._modifiers.randomly) {
+                // well...
+            }
+            //...
+        }
+    });
+
+Rewriting the example in normal form:
+
+    Assert.register({
+        randomly: {
+            alias: ['sporadically'],
+        }
+
+        throw: {
+            evaluate (fn, type) {
+                if (this._modifiers.randomly) {
+                    //...
+                }
+                //...
+            }
+        }
+    });
+
+The above adds the (not very helpful) `randomly` modifier and an alias `sporadically`.
+The second key defines the `throw` assertion.
+
+When using aliases, the `_modifiers` object will use the primary (canonical) name of
+the modifier, even if the alias is used in an assertion. For example:
+
+    expect(fn).to.sporadically.throw();  // sets this._modifiers.randomly
+
+The `assertions` array, however, will contain the alias used in the assertion.
 
 ### Explaining Assertions
 
@@ -135,70 +285,6 @@ For example:
 
     Expected 4 to be 2
 
-### Registry Keys
-
-As shown above, the keys of the registry object (the object passed to `register`) can
-contain some special syntactic forms.
-
-    thing,alt,other
-    \   / \       /
-     \_/   \_____/
-     name   aliases
-
-The set of names can be comma-delimited. When this is done, the canonical name is
-the first name and the second and subsequent names are considered aliases.
-
-For example:
-
-    Assert.register({
-        'randomly,sporadically': true,
-
-        throw (fn, type) {
-            if (this._modifiers.randomly) {
-                // well...
-            }
-            //...
-        }
-    });
-
-The above adds the (not very helpful) `randomly` modifier and an alias `sporadically`.
-The second key defines the `throw` assertion.
-
-When using aliases, the `_modifiers` object will use the primary (canonical) name of
-the modifier, even if the alias is used in an assertion. For example:
-
-    expect(fn).to.sporadically.throw();  // sets this._modifiers.randomly
-
-The `assertions` array, however, will contain the alias used in the assertion.
-
-## Advanced Configuration
-
-The value of each property in the registry object is often a simple value, but its
-full, normalized form is an object with the following properties:
-
- - `alias` - The array of alternate names (e.g. "a" and "an").
- - `evaluate` - The assertion `Function` that will return `true` for success.
- - `explain` - The `Function` that will return a string explaining the assertion.
- - `get` - A method to call to get the property value.
- - `invoke` - A method to call instead of an assertion.
-
-Rewriting the above in normal form:
-
-    Assert.register({
-        randomly: {
-            alias: ['sporadically'],
-        }
-
-        throw: {
-            evaluate (fn, type) {
-                if (this.modifiers.randomly) {
-                    //...
-                }
-                //...
-            }
-        }
-    });
-
 ### Custom Methods
 
 Non-assertion, general purpose methods can be registered by setting the `invoke`
@@ -240,9 +326,9 @@ To implement a `firstChild` property like the above, a custom getter is needed:
 When a `get` function returns something, the modifier is not tracked in the
 `_modifiers` set.
 
-### Combining Getters And Methods
+### Combining Getters And Assertions
 
-When a method or assertion also has a `get` defined, the timing is a bit different
+When an assertion (or a method) also has a `get` defined, the timing is a bit different
 to allow the code to either execute the method or descend further down the dot-path.
 
 Consider:
