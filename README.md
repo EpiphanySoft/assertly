@@ -63,27 +63,27 @@ In this case, `above` is the assertion and `be` simply acts as a modifier.
 
 Following are the supported assertions and their aliases ("aka" = "also known as").
 
- - [`a`](docs/a.md) (aka: "an")
- - [`approx`](docs/approx.md) (aka: "approximately")
- - [`be`](docs/be.md)
- - [`contain`](docs/contain.md)
- - [`empty`](docs/empty.md)
- - [`equal`](docs/equal.md)
- - [`falsy`](docs/falsy.md)
- - [`greaterThan`](docs/greaterThan.md) (aka: "above", "gt")
- - [`greaterThanOrEqual`](docs/greaterThanOrEqual.md) (aka: "atLeast", "ge", "gte")
- - [`in`](docs/in.md)
- - [`key`](docs/key.md) (aka: "keys")
- - [`length`](docs/length.md)
- - [`lessThan`](docs/lessThan.md) (aka: "below", "lt")
- - [`lessThanOrEqual`](docs/lessThanOrEqual.md) (aka: "atMost", "le", "lte")
- - [`match`](docs/match.md)
- - [`nan`](docs/nan.md) (aka: "NaN")
- - [`property`](docs/property.md)
- - [`same`](docs/same.md)
- - [`throw`](docs/throw.md)
- - [`truthy`](docs/truthy.md) (aka: "ok")
- - [`within`](docs/within.md)
+ - [`a`](docs/words/a.md) (aka: "an")
+ - [`approx`](docs/words/approx.md) (aka: "approximately")
+ - [`be`](docs/words/be.md)
+ - [`contain`](docs/words/contain.md)
+ - [`empty`](docs/words/empty.md)
+ - [`equal`](docs/words/equal.md)
+ - [`falsy`](docs/words/falsy.md)
+ - [`greaterThan`](docs/words/greaterThan.md) (aka: "above", "gt")
+ - [`greaterThanOrEqual`](docs/words/greaterThanOrEqual.md) (aka: "atLeast", "ge", "gte")
+ - [`in`](docs/words/in.md)
+ - [`key`](docs/words/key.md) (aka: "keys")
+ - [`length`](docs/words/length.md)
+ - [`lessThan`](docs/words/lessThan.md) (aka: "below", "lt")
+ - [`lessThanOrEqual`](docs/words/lessThanOrEqual.md) (aka: "atMost", "le", "lte")
+ - [`match`](docs/words/match.md)
+ - [`nan`](docs/words/nan.md) (aka: "NaN")
+ - [`property`](docs/words/property.md)
+ - [`same`](docs/words/same.md)
+ - [`throw`](docs/words/throw.md)
+ - [`truthy`](docs/words/truthy.md) (aka: "ok")
+ - [`within`](docs/words/within.md)
 
 ## Modifiers
 
@@ -117,6 +117,11 @@ to "own properties" (as in `hasOwnProperty()`).
 
 All inherited properties are ignored when `own` is specified.
 
+### exactly
+
+Used with `throw` to change the string matching behavior from sub-string match to
+full string match.
+
 ### flatly
 
 Used with `equal` and `same` to flatten the prototype chains of objects and compare
@@ -133,7 +138,7 @@ but do not evaluate truth claims. Instead they perform some more general operati
 
 Assertly provides these methods:
 
- - [`get`](docs/get.md)
+ - [`get`](docs/words/get.md)
 
 ## Conjunctions
 
