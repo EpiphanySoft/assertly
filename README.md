@@ -1,6 +1,11 @@
 # assertly
 Assert class for BDD-style assertions.
 
+[![Build Status](https://travis-ci.org/dongryphon/assertly.svg?branch=master)](https://travis-ci.org/dongryphon/assertly)
+[![Dependencies Status](https://david-dm.org/dongryphon/assertly/status.svg)](https://david-dm.org/dongryphon/assertly)
+[![npm version](https://badge.fury.io/js/assertly.svg)](https://badge.fury.io/js/assertly)
+[![MIT Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=103)](https://opensource.org/licenses/mit-license.php)
+
 Assertly was inspired by [expect.js](https://github.com/Automattic/expect.js) and implements
 almost the same interface. Some additional inspiration for assertions came from the
 [Chai Assert](http://chaijs.com/api/assert/) and [Chai BDD](http://chaijs.com/api/bdd/)
