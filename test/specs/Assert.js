@@ -6,6 +6,7 @@ const Assert = require('../../Assert');
 const Util = Assert.Util;
 
 const emptyFn = () => {};
+const emptyFnName = Assert.print(emptyFn);
 
 describe('isArrayLike', function () {
     const A = Assert;
@@ -2188,7 +2189,7 @@ function masterSuite (A) {
                 expect(emptyFn).to.throw();
             }
             catch (e) {
-                expect(e.message).to.be('Expected [Function] to throw but it did not throw');
+                expect(e.message).to.be(`Expected ${emptyFnName} to throw but it did not throw`);
                 return;
             }
 
