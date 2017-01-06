@@ -1,6 +1,6 @@
 {
   "name": "assertly",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Assert class for BDD-style assertions",
   "main": "Assert.js",
   "scripts": {
