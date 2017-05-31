@@ -2823,8 +2823,6 @@ describe('Custom Assert', function () {
 
     const expect = CustomAssert.expect.bind(CustomAssert);
 
-    CustomAssert.setup();
-
     CustomAssert.register({
         afterwardly: {
             next (value, multiple) {
