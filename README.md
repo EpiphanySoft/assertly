@@ -136,6 +136,30 @@ all of the enumerable properties.
 
 Serves only to aid readability.
 
+### deep
+
+Used with `property` to allow deeply checking properties. This allows `property` to
+accept a string containing dot and bracket notation for object/array traversal:
+
+    const test = {
+        foo : {
+            bar : [
+                1,
+                [
+                    {
+                        baz : 2
+                    }
+                ]
+            ]
+        }
+    };
+
+    expect(test).to.have.deep.property(`foo.bar[0]`, 1); //success
+    expect(test).to.have.deep.property(`foo.bar[1][0].baz`, 2); //success
+
+    expect(test).to.have.deep.property(`foo.bar[2]`); //failure
+    expect(test).to.have.deep.property(`foo.bar[1][0].baz.foobar`, 6); //failure
+
 ## Methods
 
 Asserts can also provide methods. These methods look syntactically like assertions
