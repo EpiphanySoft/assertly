@@ -1780,12 +1780,44 @@ function masterSuite (A) {
     });
 
     describe('property', function () {
-        const a = { a: 1 };
+        const a = {
+            a: 1
+        };
+        const a_deep = {
+            deep: {
+                foo: [
+                    'bar',
+                    {
+                        baz: 1
+                    }
+                ]
+            }
+        }
         const a2 = Object.create(a);
+        const a2_deep = Object.create(a_deep);
+        a2_deep.deep = Object.create(a2_deep.deep);
 
-        const b = { a: 2, b: 3 };
+        const b = {
+            a: 2,
+            b: 3
+        };
+        const b_deep = {
+            deep: {
+                foo: [
+                    [
+                        'bar',
+                        {
+                            baz: 1
+                        }
+                    ]
+                ],
+                bar: 'baz'
+            }
+        };
         const b2 = Object.create(b);
-        b2.c = 4;
+        const b2_deep = Object.create(b_deep);
+        b2_deep.deep = Object.create(b2_deep.deep);
+        b2.c = b2_deep.deep.foobar = 4;
 
         describe('any', function () {
             it('should match own and inherited properties', function () {
@@ -1804,9 +1836,39 @@ function masterSuite (A) {
                 to.exactly.throw(`Expected { a: 1 } not to have property 'a'`);
 
                 expect(() => {
-                    expect(a).to.not.have.property('a');
+                    expect(b).to.not.have.property('a');
                 }).
-                to.exactly.throw(`Expected { a: 1 } to not have property 'a'`);
+                to.exactly.throw(`Expected { a: 2, b: 3 } to not have property 'a'`);
+
+                //deep
+                expect(a_deep).to.have.deep.property(`deep.foo`);
+                expect(a_deep).to.have.deep.property(`deep.foo[0]`);
+                expect(a_deep).to.have.deep.property(`deep.foo[1].baz`);
+
+                expect(b_deep).to.have.deep.property(`deep["foo"]`);
+                expect(b_deep).to.have.deep.property(`deep["foo"][0]`);
+                expect(b_deep).to.have.deep.property(`deep["foo"][0][0]`);
+                expect(b_deep).to.have.deep.property(`deep["foo"][0][1]`);
+
+                expect(b_deep).to.have.deep.property(`deep['foo']`);
+                expect(b_deep).to.have.deep.property(`deep['foo'][0]`);
+                expect(b_deep).to.have.deep.property(`deep['foo'][0][0]`);
+                expect(b_deep).to.have.deep.property(`deep['foo'][0][1]`);
+
+                expect(b2_deep).to.have.deep.property(`deep.foo`);
+                expect(b2_deep).to.have.deep.property(`deep["foo"]`);
+                expect(b2_deep).to.have.deep.property(`deep['foo']`);
+                expect(b2_deep).to.have.deep.property(`deep.foobar`);
+
+                expect(() => {
+                    expect(a_deep).not.to.have.deep.property(`deep.foo`);
+                }).
+                to.exactly.throw(`Expected { deep: { foo: [ 'bar', [Object] ] } } not to have deep property 'deep.foo'`);
+
+                expect(() => {
+                    expect(b_deep).to.not.have.deep.property(`deep.foo`);
+                }).
+                to.exactly.throw(`Expected { deep: { foo: [ [Object] ], bar: 'baz' } } to not have deep property 'deep.foo'`);
             });
 
             describe('with a value', function () {
@@ -1824,9 +1886,40 @@ function masterSuite (A) {
                     to.exactly.throw(`Expected { a: 1 } not to have property 'a' === 1`);
 
                     expect(() => {
-                        expect(a).to.not.have.property('a', 1);
+                        expect(b).to.not.have.property('a', 2);
                     }).
-                    to.exactly.throw(`Expected { a: 1 } to not have property 'a' === 1`);
+                    to.exactly.throw(`Expected { a: 2, b: 3 } to not have property 'a' === 2`);
+
+                    //deep
+                    expect(a_deep).to.have.deep.property(`deep.foo[0]`, 'bar');
+                    expect(a_deep).to.have.deep.property(`deep.foo[1].baz`, 1);
+                    expect(a_deep).to.have.deep.property(`deep.foo[1]["baz"]`, 1);
+                    expect(a_deep).to.have.deep.property(`deep.foo[1]['baz']`, 1);
+
+                    expect(b_deep).to.have.deep.property(`deep["foo"][0][0]`, 'bar');
+                    expect(b_deep).to.have.deep.property(`deep['foo'][0][0]`, 'bar');
+                    expect(b_deep).to.have.deep.property(`deep["foo"][0][1].baz`, 1);
+                    expect(b_deep).to.have.deep.property(`deep['foo'][0][1].baz`, 1);
+                    expect(b_deep).to.have.deep.property(`deep["foo"][0][1]["baz"]`, 1);
+                    expect(b_deep).to.have.deep.property(`deep['foo'][0][1]['baz']`, 1);
+
+                    expect(b2_deep).to.have.deep.property(`deep["foo"][0][0]`, 'bar');
+                    expect(b2_deep).to.have.deep.property(`deep['foo'][0][0]`, 'bar');
+                    expect(b2_deep).to.have.deep.property(`deep["foo"][0][1].baz`, 1);
+                    expect(b2_deep).to.have.deep.property(`deep['foo'][0][1].baz`, 1);
+                    expect(b2_deep).to.have.deep.property(`deep["foo"][0][1]["baz"]`, 1);
+                    expect(b2_deep).to.have.deep.property(`deep['foo'][0][1]['baz']`, 1);
+                    expect(b2_deep).to.have.deep.property(`deep.foobar`, 4);
+
+                    expect(() => {
+                        expect(a_deep).not.to.have.deep.property(`deep.foo[0]`, 'bar');
+                    }).
+                    to.exactly.throw(`Expected { deep: { foo: [ 'bar', [Object] ] } } not to have deep property 'deep.foo[0]' === 'bar'`);
+
+                    expect(() => {
+                        expect(b_deep).to.not.have.deep.property(`deep["foo"][0][1].baz`, 1);
+                    }).
+                    to.exactly.throw(`Expected { deep: { foo: [ [Object] ], bar: 'baz' } } to not have deep property 'deep["foo"][0][1].baz' === 1`);
                 });
 
                 it('should match inherited properties', function () {
@@ -1834,6 +1927,19 @@ function masterSuite (A) {
 
                     expect(b2).to.have.property('a', 2);
                     expect(b2).to.have.property('b', 3);
+
+                    //deep
+                    expect(a2_deep).to.have.deep.property(`deep.foo[0]`, 'bar');
+                    expect(a2_deep).to.have.deep.property(`deep["foo"][0]`, 'bar');
+                    expect(a2_deep).to.have.deep.property(`deep['foo'][0]`, 'bar');
+
+                    expect(b2_deep).to.have.deep.property(`deep.foo[0][0]`, 'bar');
+                    expect(b2_deep).to.have.deep.property(`deep["foo"][0][0]`, 'bar');
+                    expect(b2_deep).to.have.deep.property(`deep['foo'][0][0]`, 'bar');
+
+                    expect(b2_deep).to.have.deep.property(`deep.foo[0][1].baz`, 1);
+                    expect(b2_deep).to.have.deep.property(`deep["foo"][0][1].baz`, 1);
+                    expect(b2_deep).to.have.deep.property(`deep['foo'][0][1].baz`, 1);
                 });
             });
 
@@ -1843,6 +1949,12 @@ function masterSuite (A) {
                         expect(a).not.to.have.property('a');
                     }).
                     to.exactly.throw(`Expected { a: 1 } not to have property 'a'`);
+
+                    //deep
+                    expect(() => {
+                        expect(b_deep).not.to.have.deep.property(`deep.foo`);
+                    }).
+                    to.exactly.throw(`Expected { deep: { foo: [ [Object] ], bar: 'baz' } } not to have deep property 'deep.foo'`);
                 });
 
                 it('should not match missing properties', function () {
@@ -1854,6 +1966,22 @@ function masterSuite (A) {
 
                     expect(b2).not.to.have.property('x');
                     expect(b2).to.not.have.property('x');
+
+                    //deep
+                    expect(a_deep).not.to.have.property(`deep.bar`);
+                    expect(a_deep).to.not.have.property(`deep.foo[1].bar`);
+                    expect(a_deep).to.not.have.property(`deep["foo"][1]["bar"]`);
+                    expect(a_deep).to.not.have.property(`deep.foo[1]['bar']`);
+
+                    expect(b_deep).to.not.have.property(`deep.baz`);
+                    expect(b_deep).not.to.have.property(`deep.foo[0][1].bar`);
+                    expect(b_deep).not.to.have.property(`deep.foo[0][1]["bar"]`);
+                    expect(b_deep).not.to.have.property(`deep['foo'][0][1]['bar']`);
+
+                    expect(b2_deep).not.to.have.property(`deep.bar.baz`);
+                    expect(b2_deep).to.not.have.property(`deep.foo[0][1].bar`);
+                    expect(b2_deep).not.to.have.property(`deep["foo"][0][1]["bar"]`);
+                    expect(b2_deep).not.to.have.property(`deep['foo'][0][1]['bar']`);
                 });
 
                 describe('with a value', function () {
@@ -1866,6 +1994,30 @@ function masterSuite (A) {
 
                         expect(b2).not.to.have.property('a', 5);
                         expect(b2).to.not.have.property('b', 6);
+
+                        //deep
+                        expect(a_deep).not.to.have.deep.property(`deep.foo[0]`, 2);
+                        expect(a_deep).to.deep.not.have.property(`deep.foo[1].baz`, 2);
+                        expect(a_deep).to.deep.not.have.property(`deep["foo"][1]["baz"]`, 2);
+                        expect(a_deep).to.deep.not.have.property(`deep.foo[1]['baz']`, 2);
+
+                        expect(b_deep).deep.not.to.have.property(`deep.bar`, 3);
+                        expect(b_deep).to.not.deep.have.property(`deep.foo[0]`, 4);
+                        expect(b_deep).to.not.deep.have.property(`deep.foo[0][0]`, 4);
+                        expect(b_deep).to.not.deep.have.property(`deep["foo"][0][0]`, 4);
+                        expect(b_deep).to.not.deep.have.property(`deep.foo[0][1].baz`, 4);
+                        expect(b_deep).to.not.deep.have.property(`deep.foo[0][1]["baz"]`, 4);
+                        expect(b_deep).to.not.deep.have.property(`deep['foo'][0][1]['baz']`, 4);
+
+                        expect(b2_deep).not.deep.to.have.property(`deep.foobar`, 5);
+                        expect(b2_deep).to.not.have.deep.property(`deep["foobar"]`, 6);
+                        expect(b2_deep).to.not.have.deep.property(`deep['foobar']`, 6);
+                        expect(b2_deep).to.not.deep.have.property(`deep.foo[0]`, 4);
+                        expect(b2_deep).to.not.deep.have.property(`deep.foo[0][0]`, 4);
+                        expect(b2_deep).to.not.deep.have.property(`deep["foo"][0][0]`, 4);
+                        expect(b2_deep).to.not.deep.have.property(`deep.foo[0][1].baz`, 4);
+                        expect(b2_deep).to.not.deep.have.property(`deep.foo[0][1]["baz"]`, 4);
+                        expect(b2_deep).to.not.deep.have.property(`deep['foo'][0][1]['baz']`, 4);
                     });
                 });
             });
@@ -1874,24 +2026,55 @@ function masterSuite (A) {
         describe('only', function () {
             it('should match own properties', function () {
                 expect(a).to.only.have.property('a');
-
                 expect(a).to.have.only.property('a');
+
+                //deep
+                expect(a_deep).to.only.have.deep.property(`deep.foo`);
+                expect(a_deep).to.deep.have.only.property(`deep.foo[1].baz`);
+                expect(a_deep).deep.to.have.only.property(`deep.foo[1]["baz"]`);
+                expect(a_deep).to.deep.have.only.property(`deep["foo"][1]["baz"]`);
+                expect(a_deep).to.have.deep.only.property(`deep.foo[1]['baz']`);
+                expect(a_deep).to.have.only.deep.property(`deep['foo'][1]['baz']`);
             });
 
             it('should match inherited properties', function () {
                 expect(a2).to.only.have.property('a');
-
                 expect(a2).to.have.only.property('a');
+
+                //deep
+                expect(a2_deep).to.only.have.deep.property(`deep.foo`);
+                expect(a2_deep).to.only.deep.have.property(`deep["foo"]`);
+                expect(a2_deep).to.deep.only.have.property(`deep['foo']`);
+                expect(a2_deep).to.deep.have.only.property(`deep.foo[1].baz`);
+                expect(a2_deep).to.deep.have.only.property(`deep.foo[1]["baz"]`);
+                expect(a2_deep).to.deep.have.only.property(`deep["foo"][1]["baz"]`);
+                expect(a2_deep).to.deep.have.only.property(`deep.foo[1]['baz']`);
+                expect(a2_deep).to.deep.have.only.property(`deep['foo'][1]['baz']`);
             });
 
             describe('with a value', function () {
                 it('should match own properties', function () {
                     expect(a).to.only.have.property('a', 1);
                     expect(a).to.have.only.property('a', 1);
+
+                    //deep
+                    expect(a_deep).to.deep.have.only.property(`deep.foo[1].baz`, 1);
+                    expect(a_deep).deep.to.have.only.property(`deep.foo[1]["baz"]`, 1);
+                    expect(a_deep).to.deep.have.only.property(`deep["foo"][1]["baz"]`, 1);
+                    expect(a_deep).to.have.deep.only.property(`deep.foo[1]['baz']`, 1);
+                    expect(a_deep).to.have.only.deep.property(`deep['foo'][1]['baz']`, 1);
                 });
+
                 it('should match inherited properties', function () {
                     expect(a2).to.only.have.property('a', 1);
                     expect(a2).to.have.only.property('a', 1);
+
+                    //deep
+                    expect(a2_deep).to.deep.have.only.property(`deep.foo[1].baz`, 1);
+                    expect(a2_deep).deep.to.have.only.property(`deep.foo[1]["baz"]`, 1);
+                    expect(a2_deep).to.deep.have.only.property(`deep["foo"][1]["baz"]`, 1);
+                    expect(a2_deep).to.have.deep.only.property(`deep.foo[1]['baz']`, 1);
+                    expect(a2_deep).to.have.only.deep.property(`deep['foo'][1]['baz']`, 1);
                 });
             });
 
@@ -1900,6 +2083,12 @@ function masterSuite (A) {
                     expect(b).to.only.have.property('c');
                 }).
                 to.exactly.throw(`Expected { a: 2, b: 3 } to only have property 'c'`);
+
+                //deep
+                expect(() => {
+                    expect(b_deep).to.only.have.deep.property(`deep.foo.bar`);
+                }).
+                to.exactly.throw(`Expected { deep: { foo: [ [Object] ], bar: 'baz' } } to only have deep property 'deep.foo.bar'`);
             });
 
             it('should fail if not only', function () {
@@ -1907,6 +2096,12 @@ function masterSuite (A) {
                     expect(b).to.only.have.property('a');
                 }).
                 to.exactly.throw(`Expected { a: 2, b: 3 } to only have property 'a'`);
+
+                //deep
+                expect(() => {
+                    expect(b_deep).to.only.have.deep.property(`deep.foo`);
+                }).
+                to.exactly.throw(`Expected { deep: { foo: [ [Object] ], bar: 'baz' } } to only have deep property 'deep.foo'`);
             });
 
             describe('not', function () {
@@ -1915,14 +2110,22 @@ function masterSuite (A) {
                         expect(a).not.to.only.have.property('a');
                     }).
                     to.exactly.throw(`Expected { a: 1 } not to only have property 'a'`);
+
+                    //deep
+                    expect(() => {
+                        expect(a_deep).not.to.deep.only.have.property(`deep.foo[1].baz`);
+                    }).
+                    to.exactly.throw(`Expected { deep: { foo: [ 'bar', [Object] ] } } not to deep only have property 'deep.foo[1].baz'`);
                 });
 
                 it('should not match missing properties', function () {
                     expect(b).not.to.only.have.property('c');
                     expect(b).to.not.only.have.property('c');
 
-                    expect(b).not.to.have.only.property('c');
-                    expect(b).to.not.have.only.property('c');
+                    //deep
+                    expect(b_deep).not.to.only.deep.have.property(`deep.foo`);
+                    expect(b_deep).to.deep.not.only.have.property(`deep["foo"]`);
+                    expect(b_deep).not.to.only.deep.have.property(`deep['foo']`);
                 });
 
                 describe('with a value', function () {
@@ -1932,6 +2135,15 @@ function masterSuite (A) {
 
                         expect(a).not.to.have.only.property('a', 2);
                         expect(a).to.not.have.only.property('a', 2);
+
+                        //deep
+                        expect(a_deep).not.to.only.have.deep.property(`deep.foo[1]`, 2);
+                        expect(a_deep).to.not.only.deep.have.property(`deep["foo"][1]`, 2);
+                        expect(a_deep).not.to.only.have.deep.property(`deep['foo'][1]`, 2);
+
+                        expect(a_deep).not.to.deep.have.only.property(`deep.foo[1]`, 2);
+                        expect(a_deep).deep.to.not.have.only.property(`deep["foo"][1]`, 2);
+                        expect(a_deep).to.deep.not.have.only.property(`deep['foo'][1]`, 2);
                     });
 
                     it('should not match missing properties', function () {
@@ -1940,6 +2152,15 @@ function masterSuite (A) {
 
                         expect(b).not.to.have.only.property('c', 2);
                         expect(b).to.not.have.only.property('c', 2);
+
+                        //deep
+                        expect(b_deep).not.to.only.have.deep.property(`deep.foo[0][0]`, 2);
+                        expect(b_deep).deep.to.not.only.have.property(`deep["foo"][0][0]`, 2);
+                        expect(b_deep).deep.to.not.only.have.property(`deep['foo'][0][0]`, 2);
+
+                        expect(b_deep).not.to.deep.have.only.property(`deep.foo[0][0]`, 2);
+                        expect(b_deep).to.deep.not.have.only.property(`deep["foo"][0][0]`, 2);
+                        expect(b_deep).to.not.have.deep.only.property(`deep['foo'][0][0]`, 2);
                     });
 
                     it('should not match with other properties present', function () {
@@ -1948,6 +2169,15 @@ function masterSuite (A) {
 
                         expect(b).not.to.have.only.property('a', 1);
                         expect(b).to.not.have.only.property('a', 1);
+
+                        //deep
+                        expect(b_deep).not.to.only.have.property(`deep.foo`, 1);
+                        expect(b_deep).not.to.only.have.property(`deep["foo"]`, 1);
+                        expect(b_deep).not.to.only.have.property(`deep['foo']`, 1);
+
+                        expect(b_deep).not.to.have.only.property(`deep.bar`, 1);
+                        expect(b_deep).not.to.have.only.property(`deep["bar"]`, 1);
+                        expect(b_deep).not.to.have.only.property(`deep['bar']`, 1);
                     });
                 });
             });
@@ -1957,12 +2187,30 @@ function masterSuite (A) {
             it('should match own properties', function () {
                 expect(a).to.only.have.own.property('a');
                 expect(a).to.have.only.own.property('a');
+
+                //deep
+                expect(a_deep).to.only.deep.have.own.property(`deep.foo`);
+                expect(a_deep).to.have.only.own.deep.property(`deep["foo"]`);
+                expect(a_deep).to.deep.have.only.own.property(`deep['foo']`);
+
+                expect(a_deep).to.only.deep.have.own.property(`deep.foo[1].baz`);
+                expect(a_deep).to.have.only.own.deep.property(`deep["foo"][1].baz`);
+                expect(a_deep).to.deep.have.only.own.property(`deep['foo'][1]['baz']`);
             });
 
             describe('with a value', function () {
                 it('should match own properties', function () {
                     expect(a).to.only.have.own.property('a', 1);
                     expect(a).to.have.only.own.property('a', 1);
+
+                    //deep
+                    expect(a_deep).to.only.deep.have.own.property(`deep.foo[1].baz`, 1);
+                    expect(a_deep).to.only.deep.have.own.property(`deep.foo[1]["baz"]`, 1);
+                    expect(a_deep).to.only.deep.have.own.property(`deep.foo[1]['baz']`, 1);
+                    expect(a_deep).to.have.only.own.deep.property(`deep["foo"][1].baz`, 1);
+                    expect(a_deep).to.deep.have.only.own.property(`deep['foo'][1].baz`, 1);
+                    expect(a_deep).to.have.only.own.deep.property(`deep["foo"][1]["baz"]`, 1);
+                    expect(a_deep).to.deep.have.only.own.property(`deep['foo'][1]['baz']`, 1);
                 });
             });
 
@@ -1971,6 +2219,12 @@ function masterSuite (A) {
                     expect(b).to.only.have.own.property('c');
                 }).
                 to.exactly.throw(`Expected { a: 2, b: 3 } to only have own property 'c'`);
+
+                //deep
+                expect(() => {
+                    expect(b_deep).to.only.deep.have.own.property(`deep.foo[1]`);
+                }).
+                to.exactly.throw(`Expected { deep: { foo: [ [Object] ], bar: 'baz' } } to only deep have own property 'deep.foo[1]'`);
             });
 
             it('should fail if not only', function () {
@@ -1978,6 +2232,12 @@ function masterSuite (A) {
                     expect(b).to.only.have.own.property('a');
                 }).
                 to.exactly.throw(`Expected { a: 2, b: 3 } to only have own property 'a'`);
+
+                //deep
+                expect(() => {
+                    expect(b_deep).deep.to.only.have.own.property(`deep.foo`);
+                }).
+                to.exactly.throw(`Expected { deep: { foo: [ [Object] ], bar: 'baz' } } deep to only have own property 'deep.foo'`);
             });
 
             it('should fail if not own', function () {
@@ -1985,6 +2245,12 @@ function masterSuite (A) {
                     expect(a2).to.only.have.own.property('a');
                 }).
                 to.exactly.throw(`Expected {} to only have own property 'a'`);
+
+                //deep
+                expect(() => {
+                    expect(b2_deep).to.only.have.own.deep.property(`deep.bar`);
+                }).
+                to.exactly.throw(`Expected { deep: { foobar: 4 } } to only have own deep property 'deep.bar'`);
             });
 
             describe('not', function () {
@@ -1994,6 +2260,15 @@ function masterSuite (A) {
 
                     expect(a2).not.to.have.only.own.property('a');
                     expect(a2).to.not.have.only.own.property('a');
+
+                    //deep
+                    expect(a2_deep).not.to.deep.only.have.own.property(`deep.foo`);
+                    expect(a2_deep).deep.to.not.only.have.own.property(`deep["foo"]`);
+                    expect(a2_deep).to.not.only.have.own.deep.property(`deep['foo']`);
+
+                    expect(a2_deep).not.to.have.only.own.deep.property(`deep.foo`);
+                    expect(a2_deep).to.not.have.deep.only.own.property(`deep["foo"]`);
+                    expect(a2_deep).to.deep.not.have.only.own.property(`deep['foo']`);
                 });
 
                 it('should not match missing properties', function () {
@@ -2002,6 +2277,15 @@ function masterSuite (A) {
 
                     expect(b).not.to.have.only.own.property('c');
                     expect(b).to.not.have.only.own.property('c');
+
+                    //deep
+                    expect(b_deep).not.to.deep.only.have.own.property(`deep.foo[1]`);
+                    expect(b_deep).to.deep.not.only.have.own.property(`deep["foo"][1]`);
+                    expect(b_deep).to.not.only.have.deep.own.property(`deep['foo'][1]`);
+
+                    expect(b_deep).not.to.have.only.own.deep.property(`deep.foo[1]['bar']`);
+                    expect(b_deep).to.not.have.deep.only.own.property(`deep["foo"][1]["bar"]`);
+                    expect(b_deep).to.not.deep.have.only.own.property(`deep['foo'][1].bar`);
                 });
 
                 it('should not match with other properties present', function () {
@@ -2010,6 +2294,15 @@ function masterSuite (A) {
 
                     expect(b).not.to.have.only.own.property('a');
                     expect(b).to.not.have.only.own.property('a');
+
+                    //deep
+                    expect(b_deep).not.to.only.deep.have.own.property(`deep.foo`);
+                    expect(b_deep).to.deep.not.only.have.own.property(`deep["foo"]`);
+                    expect(b_deep).to.not.only.have.own.deep.property(`deep['foo']`);
+
+                    expect(b_deep).deep.not.to.have.only.own.property(`deep.foo`);
+                    expect(b_deep).to.not.have.only.deep.own.property(`deep["foo"]`);
+                    expect(b_deep).to.not.have.deep.only.own.property(`deep['foo']`);
                 });
 
                 describe('with a value', function () {
@@ -2019,6 +2312,15 @@ function masterSuite (A) {
 
                         expect(a2).not.to.have.only.own.property('a', 1);
                         expect(a2).to.not.have.only.own.property('a', 1);
+
+                        //deep
+                        expect(b2_deep).not.to.only.have.own.deep.property(`deep.bar`, 'baz');
+                        expect(b2_deep).to.not.only.deep.have.own.property(`deep["bar"]`, 'baz');
+                        expect(b2_deep).to.deep.not.only.have.own.property(`deep['bar']`, 'baz');
+
+                        expect(b2_deep).deep.not.to.have.only.own.property(`deep.bar`, 'baz');
+                        expect(b2_deep).to.not.have.only.deep.own.property(`deep["bar"]`, 'baz');
+                        expect(b2_deep).to.not.have.deep.only.own.property(`deep['bar']`, 'baz');
                     });
 
                     it('should not match properties with unequal value', function () {
@@ -2027,6 +2329,15 @@ function masterSuite (A) {
 
                         expect(a).not.to.have.only.own.property('a', 2);
                         expect(a).to.not.have.only.own.property('a', 2);
+
+                        //deep
+                        expect(b_deep).not.to.only.have.own.property(`deep.bar`, 2);
+                        expect(b_deep).to.not.only.have.own.property(`deep["bar"]`, 2);
+                        expect(b_deep).to.not.only.have.own.property(`deep['bar']`, 2);
+
+                        expect(b_deep).not.to.have.only.own.property(`deep.bar`, 2);
+                        expect(b_deep).to.not.have.only.own.property(`deep["bar"]`, 2);
+                        expect(b_deep).to.not.have.only.own.property(`deep['bar']`, 2);
                     });
 
                     it('should not match missing properties', function () {
@@ -2035,6 +2346,17 @@ function masterSuite (A) {
 
                         expect(b).not.to.have.only.own.property('c', 2);
                         expect(b).to.not.have.only.own.property('c', 2);
+
+                        //deep
+                        expect(b_deep).not.to.only.have.deep.own.property(`deep.foo[1]`, 2);
+                        expect(b_deep).to.not.only.deep.have.own.property(`deep.foo[0][3].baz`, 2);
+                        expect(b_deep).to.not.only.deep.have.own.property(`deep["foo"][0][3]['baz']`, 2);
+                        expect(b_deep).deep.to.not.only.have.own.property(`deep.foo[0][1]["foo"]`, 2);
+                        expect(b_deep).deep.to.not.only.have.own.property(`deep['foo'][0][1].foo`, 2);
+
+                        expect(b_deep).not.deep.to.have.only.own.property(`deep["foo"][1]`, 2);
+                        expect(b_deep).to.not.deep.have.only.own.property(`deep['foo'][0][3].baz`, 2);
+                        expect(b_deep).to.not.have.only.own.deep.property(`deep['foo'][0][3]['baz']`, 2);
                     });
 
                     it('should not match with other properties present', function () {
@@ -2043,6 +2365,15 @@ function masterSuite (A) {
 
                         expect(b).not.to.have.only.own.property('a', 1);
                         expect(b).to.not.have.only.own.property('a', 1);
+
+                        //deep
+                        expect(b_deep).not.to.only.have.own.deep.property(`deep.bar`, 1);
+                        expect(b_deep).to.not.only.have.own.deep.property(`deep["bar"]`, 1);
+                        expect(b_deep).to.not.only.have.own.deep.property(`deep['bar']`, 1);
+
+                        expect(b_deep).not.deep.to.have.only.own.property(`deep.bar`, 1);
+                        expect(b_deep).deep.to.not.have.only.own.property(`deep["bar"]`, 1);
+                        expect(b_deep).to.not.have.only.deep.own.property(`deep['bar']`, 1);
                     });
                 });
             });
@@ -2051,19 +2382,55 @@ function masterSuite (A) {
         describe('own', function () {
             it('should match own properties', function () {
                 expect(a).to.have.own.property('a');
+
+                //deep
+                expect(a_deep).to.have.own.deep.property(`deep.foo`);
+                expect(a_deep).to.have.deep.own.property(`deep["foo"]`);
+                expect(a_deep).to.deep.have.own.property(`deep['foo']`);
             });
 
             it('should not match with other properties present', function () {
                 expect(b).to.have.own.property('a');
+
+                //deep
+                expect(b_deep).deep.to.have.own.property(`deep.foo[0][1].baz`);
+                expect(b_deep).to.have.deep.own.property(`deep["foo"][0][1].baz`);
+                expect(b_deep).to.have.own.deep.property(`deep['foo'][0][1].baz`);
+
+                expect(b_deep).to.have.deep.own.property(`deep.foo[0][1]["baz"]`);
+                expect(b_deep).to.deep.have.own.property(`deep["foo"][0][1]["baz"]`);
+                expect(b_deep).to.have.own.deep.property(`deep['foo'][0][1]["baz"]`);
+
+                expect(b_deep).deep.to.have.own.property(`deep.foo[0][1]['baz']`);
+                expect(b_deep).to.deep.have.own.property(`deep["foo"][0][1]['baz']`);
+                expect(b_deep).to.have.own.deep.property(`deep['foo'][0][1]['baz']`);
             });
 
             describe('with a value', function () {
                 it('should match own properties', function () {
                     expect(a).to.have.own.property('a', 1);
+
+                    //deep
+                    expect(a_deep).deep.to.have.own.property(`deep.foo[1].baz`, 1);
+                    expect(a_deep).deep.to.have.own.property(`deep["foo"][1].baz`, 1);
+                    expect(a_deep).deep.to.have.own.property(`deep['foo'][1].baz`, 1);
+
+                    expect(a_deep).deep.to.have.own.property(`deep.foo[1]["baz"]`, 1);
+                    expect(a_deep).deep.to.have.own.property(`deep["foo"][1]["baz"]`, 1);
+                    expect(a_deep).deep.to.have.own.property(`deep['foo'][1]["baz"]`, 1);
+
+                    expect(a_deep).deep.to.have.own.property(`deep.foo[1]['baz']`, 1);
+                    expect(a_deep).deep.to.have.own.property(`deep["foo"][1]['baz']`, 1);
+                    expect(a_deep).deep.to.have.own.property(`deep['foo'][1]['baz']`, 1);
                 });
 
                 it('should match with other properties present', function () {
                     expect(b).to.have.own.property('a', 2);
+
+                    //deep
+                    expect(b_deep).deep.to.have.own.property(`deep.bar`, 'baz');
+                    expect(b_deep).to.deep.have.own.property(`deep["bar"]`, 'baz');
+                    expect(b_deep).to.have.own.deep.property(`deep['bar']`, 'baz');
                 });
             });
 
@@ -2072,6 +2439,12 @@ function masterSuite (A) {
                     expect(b).to.have.own.property('c');
                 }).
                 to.exactly.throw(`Expected { a: 2, b: 3 } to have own property 'c'`);
+
+                //deep
+                expect(() => {
+                    expect(b_deep).to.have.deep.own.property(`deep.foo[0][4]["bar"][1]['baz']`);
+                }).
+                to.exactly.throw(`Expected { deep: { foo: [ [Object] ], bar: 'baz' } } to have deep own property 'deep.foo[0][4]["bar"][1][\\'baz\\']'`);
             });
 
             it('should fail if not own', function () {
@@ -2079,33 +2452,64 @@ function masterSuite (A) {
                     expect(a2).to.have.own.property('a');
                 }).
                 to.exactly.throw(`Expected {} to have own property 'a'`);
+
+                //deep
+                expect(() => {
+                    expect(a2_deep).to.deep.have.own.property('deep.foo');
+                }).
+                to.exactly.throw(`Expected { deep: {} } to deep have own property 'deep.foo'`);
             });
 
             describe('not', function () {
                 it('should not match inherited properties', function () {
                     expect(a2).not.to.have.own.property('a');
                     expect(a2).to.not.have.own.property('a');
+
+                    //deep
+                    expect(a2_deep).not.to.deep.have.own.property(`deep.foo`);
+                    expect(a2_deep).to.not.have.own.deep.property(`deep["foo"]`);
+                    expect(a2_deep).to.not.have.own.deep.property(`deep['foo']`);
                 });
 
                 it('should not match missing properties', function () {
                     expect(b).not.to.have.own.property('c');
                     expect(b).to.not.have.own.property('c');
+
+                    //deep
+                    expect(b_deep).not.to.deep.have.own.property(`deep.foo[0][3].bar`);
+                    expect(b_deep).to.deep.not.have.own.property(`deep["foo"][0][3].bar`);
+                    expect(b_deep).to.not.have.deep.own.property(`deep['foo'][0][3]["bar"]`);
                 });
 
                 describe('with a value', function () {
                     it('should not match inherited properties', function () {
                         expect(a2).not.to.have.own.property('a', 1);
                         expect(a2).to.not.have.own.property('a', 1);
+
+                        //deep
+                        expect(a2_deep).not.deep.to.have.own.property(`deep.foo`, 1);
+                        expect(a2_deep).to.not.have.own.deep.property(`deep["foo"]`, 1);
+                        expect(a2_deep).deep.to.not.have.own.property(`deep['foo']`, 1);
                     });
 
                     it('should not match properties with unequal value', function () {
                         expect(a).not.to.have.own.property('a', 2);
                         expect(a).to.not.have.own.property('a', 2);
+
+                        //deep
+                        expect(a_deep).not.to.have.own.deep.property(`deep.foo[0]`, 2);
+                        expect(a_deep).to.not.deep.have.own.property(`deep["foo"][0]`, 2);
+                        expect(a_deep).deep.to.not.have.own.property(`deep['foo'][0]`, 2);
                     });
 
                     it('should not match missing properties', function () {
                         expect(b).not.to.have.own.property('c', 2);
                         expect(b).to.not.have.own.property('c', 2);
+
+                        //deep
+                        expect(b_deep).not.to.deep.have.own.property(`deep.foo[0][3].bar`, 2);
+                        expect(b_deep).to.deep.not.have.own.property(`deep["foo"][0][3].bar`, 2);
+                        expect(b_deep).to.not.have.deep.own.property(`deep['foo'][0][3]["bar"]`, 2);
                     });
                 });
             });

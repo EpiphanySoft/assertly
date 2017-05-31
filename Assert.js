@@ -171,6 +171,7 @@ class Assert {
             have: true,
             own: true,
             exactly: true,
+            deep: true,
 
             'a,an': {
                 evaluate (actual, expected) {
@@ -362,37 +363,86 @@ class Assert {
 
             property: {
                 evaluate (object, property, value) {
-                    let only = this._modifiers.only;
-                    //TODO deep properties "foo.bar.baz"
+                    const { deep, only, own } = this._modifiers;
 
-                    if (this._modifiers.own) {
-                        if (!object.hasOwnProperty(property)) {
+                    const checkProp = (object, property, value) => {
+                        if (own) {
+                            if (!object.hasOwnProperty(property)) {
+                                return false;
+                            }
+                            if (only) {
+                                for (let s of Object.keys(object)) {
+                                    if (s !== property) {
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                        else if (!(property in object)) {
                             return false;
                         }
-                        if (only) {
-                            for (let s of Object.keys(object)) {
+                        else if (only) {
+                            for (let s in object) {
                                 if (s !== property) {
                                     return false;
                                 }
                             }
                         }
-                    }
-                    else if (!(property in object)) {
-                        return false;
-                    }
-                    else if (only) {
-                        for (let s in object) {
-                            if (s !== property) {
-                                return false;
-                            }
+
+                        if (value !== undefined) {
+                            return object[property] === value;
                         }
-                    }
 
-                    if (value !== undefined) {
-                        return object[property] === value;
-                    }
+                        return true;
+                    };
 
-                    return true;
+                    const checkDeepProp = (object, property, value) => {
+                        const parts = property
+                            /**
+                             * Splits the property for dot and bracket notations:
+                             *
+                             *  - foo.bar
+                             *  - foo[1]
+                             *  - foo[0].bar
+                             *  - foo[0][1]
+                             *  - foo[0][3].bar[1].baz
+                             *  - foo['bar'][1].baz
+                             *  - foo.bar[0]["baz"]
+                             *
+                             * For brackets, it will split on the bracket so the
+                             * part is whatever is between the brackets (number for
+                             * array, even text for object).
+                             */
+                            .split(/\['?"?|'?"?\]\.?\[?'?"?|\./)
+                            /**
+                             * Removes any empty strings that can occur
+                             * with bracket notation.
+                             */
+                            .filter(item => item !== '');
+                        let   last  = parts.pop();
+                        let   item  = object;
+
+                        const good  = !parts.some(part => {
+                            item = item[part];
+
+                            if (!item || typeof item !== 'object') {
+                                return true;
+                            }
+                        });
+
+                        if (good) {
+                            return checkProp(item, last, value);
+                        }
+
+                        return good;
+                    };
+
+                    if (deep) {
+                        return checkDeepProp(object, property, value);
+                    }
+                    else {
+                        return checkProp(object, property, value);
+                    }
                 },
                 explain (object, property, value) {
                     if (value !== undefined) {
