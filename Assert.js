@@ -36,7 +36,7 @@ class Assert {
             }
         }
 
-        if (!A.isSetup) {
+        if (!A.hasOwnProperty('isSetup')) {
             A.setup();
         }
     }
@@ -578,7 +578,7 @@ class Assert {
         const A = this;
 
         // ensure the defaults are setup first
-        if (!A.isSetup) {
+        if (!A.hasOwnProperty('isSetup')) {
             A.setup();
         }
 
