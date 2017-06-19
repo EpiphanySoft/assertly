@@ -2283,9 +2283,9 @@ function masterSuite (A) {
                     expect(b_deep).to.deep.not.only.have.own.property(`deep["foo"][1]`);
                     expect(b_deep).to.not.only.have.deep.own.property(`deep['foo'][1]`);
 
-                    expect(b_deep).not.to.have.only.own.deep.property(`deep.foo[1]['bar']`);
-                    expect(b_deep).to.not.have.deep.only.own.property(`deep["foo"][1]["bar"]`);
-                    expect(b_deep).to.not.deep.have.only.own.property(`deep['foo'][1].bar`);
+                    expect(b_deep).not.to.have.only.own.deep.property(`deep.foo[0][1]['bar']`);
+                    expect(b_deep).to.not.have.deep.only.own.property(`deep["foo"][0][1]["bar"]`);
+                    expect(b_deep).to.not.deep.have.only.own.property(`deep['foo'][0][1].bar`);
                 });
 
                 it('should not match with other properties present', function () {

@@ -365,38 +365,10 @@ class Assert {
                 evaluate (object, property, value) {
                     const { deep, only, own } = this._modifiers;
 
-                    const checkProp = (object, property, value) => {
-                        if (own) {
-                            if (!object.hasOwnProperty(property)) {
-                                return false;
-                            }
-                            if (only) {
-                                for (let s of Object.keys(object)) {
-                                    if (s !== property) {
-                                        return false;
-                                    }
-                                }
-                            }
-                        }
-                        else if (!(property in object)) {
-                            return false;
-                        }
-                        else if (only) {
-                            for (let s in object) {
-                                if (s !== property) {
-                                    return false;
-                                }
-                            }
-                        }
+                    let obj = object;
+                    let prop = property;
 
-                        if (value !== undefined) {
-                            return object[property] === value;
-                        }
-
-                        return true;
-                    };
-
-                    const checkDeepProp = (object, property, value) => {
+                    if (deep) {
                         const parts = property
                             /**
                              * Splits the property for dot and bracket notations:
@@ -419,30 +391,50 @@ class Assert {
                              * with bracket notation.
                              */
                             .filter(item => item !== '');
-                        let   last  = parts.pop();
-                        let   item  = object;
 
-                        const good  = !parts.some(part => {
-                            item = item[part];
+                        prop = parts.pop();
 
-                            if (!item || typeof item !== 'object') {
-                                return true;
+                        for (let part of parts) {
+                            if (!obj) {
+                                return false;
                             }
-                        });
 
-                        if (good) {
-                            return checkProp(item, last, value);
+                            obj = obj[part]; // ish
                         }
-
-                        return good;
-                    };
-
-                    if (deep) {
-                        return checkDeepProp(object, property, value);
                     }
-                    else {
-                        return checkProp(object, property, value);
+
+                    if (!obj) {
+                        return false;
                     }
+
+                    if (own) {
+                        if (!obj.hasOwnProperty(prop)) {
+                            return false;
+                        }
+                        if (only) {
+                            for (let s of Object.keys(obj)) {
+                                if (s !== prop) {
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                    else if (typeof obj === 'object' && !(prop in obj)) {
+                        return false;
+                    }
+                    else if (only) {
+                        for (let s in obj) {
+                            if (s !== prop) {
+                                return false;
+                            }
+                        }
+                    }
+
+                    if (value !== undefined) {
+                        return obj[prop] === value;
+                    }
+
+                    return true;
                 },
                 explain (object, property, value) {
                     if (value !== undefined) {
