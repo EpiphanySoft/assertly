@@ -1863,12 +1863,12 @@ function masterSuite (A) {
                 expect(() => {
                     expect(a_deep).not.to.have.deep.property(`deep.foo`);
                 }).
-                to.exactly.throw(`Expected { deep: { foo: [ 'bar', [Object] ] } } not to have deep property 'deep.foo'`);
+                to.exactly.throw(`Expected ${A.print(a_deep)} not to have deep property 'deep.foo'`);
 
                 expect(() => {
                     expect(b_deep).to.not.have.deep.property(`deep.foo`);
                 }).
-                to.exactly.throw(`Expected { deep: { foo: [ [Object] ], bar: 'baz' } } to not have deep property 'deep.foo'`);
+                to.exactly.throw(`Expected ${A.print(b_deep)} to not have deep property 'deep.foo'`);
             });
 
             describe('with a value', function () {
@@ -1919,7 +1919,7 @@ function masterSuite (A) {
                     expect(() => {
                         expect(b_deep).to.not.have.deep.property(`deep["foo"][0][1].baz`, 1);
                     }).
-                    to.exactly.throw(`Expected { deep: { foo: [ [Object] ], bar: 'baz' } } to not have deep property 'deep["foo"][0][1].baz' === 1`);
+                    to.exactly.throw(`Expected ${A.print(b_deep)} to not have deep property 'deep["foo"][0][1].baz' === 1`);
                 });
 
                 it('should match inherited properties', function () {
@@ -1954,7 +1954,7 @@ function masterSuite (A) {
                     expect(() => {
                         expect(b_deep).not.to.have.deep.property(`deep.foo`);
                     }).
-                    to.exactly.throw(`Expected { deep: { foo: [ [Object] ], bar: 'baz' } } not to have deep property 'deep.foo'`);
+                    to.exactly.throw(`Expected ${A.print(b_deep)} not to have deep property 'deep.foo'`);
                 });
 
                 it('should not match missing properties', function () {
@@ -2088,7 +2088,7 @@ function masterSuite (A) {
                 expect(() => {
                     expect(b_deep).to.only.have.deep.property(`deep.foo.bar`);
                 }).
-                to.exactly.throw(`Expected { deep: { foo: [ [Object] ], bar: 'baz' } } to only have deep property 'deep.foo.bar'`);
+                to.exactly.throw(`Expected ${A.print(b_deep)} to only have deep property 'deep.foo.bar'`);
             });
 
             it('should fail if not only', function () {
@@ -2101,7 +2101,7 @@ function masterSuite (A) {
                 expect(() => {
                     expect(b_deep).to.only.have.deep.property(`deep.foo`);
                 }).
-                to.exactly.throw(`Expected { deep: { foo: [ [Object] ], bar: 'baz' } } to only have deep property 'deep.foo'`);
+                to.exactly.throw(`Expected ${A.print(b_deep)} to only have deep property 'deep.foo'`);
             });
 
             describe('not', function () {
@@ -2224,7 +2224,7 @@ function masterSuite (A) {
                 expect(() => {
                     expect(b_deep).to.only.deep.have.own.property(`deep.foo[1]`);
                 }).
-                to.exactly.throw(`Expected { deep: { foo: [ [Object] ], bar: 'baz' } } to only deep have own property 'deep.foo[1]'`);
+                to.exactly.throw(`Expected ${A.print(b_deep)} to only deep have own property 'deep.foo[1]'`);
             });
 
             it('should fail if not only', function () {
@@ -2237,7 +2237,7 @@ function masterSuite (A) {
                 expect(() => {
                     expect(b_deep).deep.to.only.have.own.property(`deep.foo`);
                 }).
-                to.exactly.throw(`Expected { deep: { foo: [ [Object] ], bar: 'baz' } } deep to only have own property 'deep.foo'`);
+                to.exactly.throw(`Expected ${A.print(b_deep)} deep to only have own property 'deep.foo'`);
             });
 
             it('should fail if not own', function () {
@@ -2444,7 +2444,7 @@ function masterSuite (A) {
                 expect(() => {
                     expect(b_deep).to.have.deep.own.property(`deep.foo[0][4]["bar"][1]['baz']`);
                 }).
-                to.exactly.throw(`Expected { deep: { foo: [ [Object] ], bar: 'baz' } } to have deep own property 'deep.foo[0][4]["bar"][1][\\'baz\\']'`);
+                to.exactly.throw(`Expected ${A.print(b_deep)} to have deep own property 'deep.foo[0][4]["bar"][1][\\'baz\\']'`);
             });
 
             it('should fail if not own', function () {
