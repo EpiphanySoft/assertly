@@ -419,7 +419,7 @@ class Assert {
                             }
                         }
                     }
-                    else if (typeof obj === 'object' && !(prop in obj)) {
+                    else if (typeof obj !== 'object' || !(prop in obj)) {
                         return false;
                     }
                     else if (only) {
