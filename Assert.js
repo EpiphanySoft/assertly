@@ -36,7 +36,7 @@ class Assert {
             }
         }
 
-        if (!A.hasOwnProperty('registry')) {
+        if (!A.hasOwnProperty('isSetup')) {
             A.setup();
         }
     }
@@ -577,6 +577,11 @@ class Assert {
     static register (...args) {
         const A = this;
 
+        // ensure the defaults are setup first
+        if (!A.hasOwnProperty('isSetup')) {
+            A.setup();
+        }
+
         for (let registry of args) {
             if (typeof registry === 'function') {
                 registry.call(A, A, Util);
@@ -644,6 +649,8 @@ class Assert {
 
     static setup () {
         let registry = this.getDefaults();
+
+        this.isSetup = true;
 
         this.register(registry);
     }
