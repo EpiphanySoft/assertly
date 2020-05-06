@@ -171,6 +171,7 @@ class Assert {
             have: true,
             own: true,
             exactly: true,
+            deep: true,
 
             'a,an': {
                 evaluate (actual, expected) {
@@ -362,34 +363,75 @@ class Assert {
 
             property: {
                 evaluate (object, property, value) {
-                    let only = this._modifiers.only;
-                    //TODO deep properties "foo.bar.baz"
+                    const { deep, only, own } = this._modifiers;
 
-                    if (this._modifiers.own) {
-                        if (!object.hasOwnProperty(property)) {
+                    let obj = object;
+                    let prop = property;
+
+                    if (deep) {
+                        const parts = property
+                            /**
+                             * Splits the property for dot and bracket notations:
+                             *
+                             *  - foo.bar
+                             *  - foo[1]
+                             *  - foo[0].bar
+                             *  - foo[0][1]
+                             *  - foo[0][3].bar[1].baz
+                             *  - foo['bar'][1].baz
+                             *  - foo.bar[0]["baz"]
+                             *
+                             * For brackets, it will split on the bracket so the
+                             * part is whatever is between the brackets (number for
+                             * array, even text for object).
+                             */
+                            .split(/\['?"?|'?"?\]\.?\[?'?"?|\./)
+                            /**
+                             * Removes any empty strings that can occur
+                             * with bracket notation.
+                             */
+                            .filter(item => item !== '');
+
+                        prop = parts.pop();
+
+                        for (let part of parts) {
+                            if (!obj) {
+                                return false;
+                            }
+
+                            obj = obj[part]; // ish
+                        }
+                    }
+
+                    if (!obj) {
+                        return false;
+                    }
+
+                    if (own) {
+                        if (!obj.hasOwnProperty(prop)) {
                             return false;
                         }
                         if (only) {
-                            for (let s of Object.keys(object)) {
-                                if (s !== property) {
+                            for (let s of Object.keys(obj)) {
+                                if (s !== prop) {
                                     return false;
                                 }
                             }
                         }
                     }
-                    else if (!(property in object)) {
+                    else if (typeof obj !== 'object' || !(prop in obj)) {
                         return false;
                     }
                     else if (only) {
-                        for (let s in object) {
-                            if (s !== property) {
+                        for (let s in obj) {
+                            if (s !== prop) {
                                 return false;
                             }
                         }
                     }
 
                     if (value !== undefined) {
-                        return object[property] === value;
+                        return obj[prop] === value;
                     }
 
                     return true;
